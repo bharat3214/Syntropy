@@ -42,7 +42,7 @@ export const carbonTransactionCreateSchema = z.object({
     .optional(),
   sourceRef: z.string().optional(),
   activityAmount: z.number().positive("activityAmount must be a positive number"),
-  transactionDate: z.string().datetime().optional(), // ISO string from client
+   transactionDate: z.iso.datetime().optional(),// ISO string from client
 });
 
 export const carbonTransactionUpdateSchema = carbonTransactionCreateSchema.partial();
@@ -56,7 +56,7 @@ export const environmentalGoalCreateSchema = z.object({
   departmentId: z.string().min(1, "departmentId is required"),
   targetCo2Kg: z.number().positive("targetCo2Kg must be a positive number"),
   currentCo2Kg: z.number().nonnegative().optional(),
-  deadline: z.string().datetime("deadline must be an ISO date string"),
+  deadline: z.iso.datetime({ error: "deadline must be an ISO date string" }),
   status: z
     .enum(["ACTIVE", "ON_TRACK", "AT_RISK", "COMPLETED", "ARCHIVED"])
     .optional(),
