@@ -1,95 +1,492 @@
 import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { Pool } from "pg";
+import { seedEnvironmental } from "./seed-environmental";
 
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  console.log("Seeding Environmental module...\n");
+  // Clean existing data
+  await prisma.complianceIssue.deleteMany();
+  await prisma.audit.deleteMany();
+  await prisma.policyAcknowledgement.deleteMany();
+  await prisma.policy.deleteMany();
 
-  // Departments — everything FKs to these.
-  const [manufacturing, logistics, corporate, sales, rnd] = await Promise.all([
-    prisma.department.create({ data: { name: "Manufacturing", code: "MFG" } }),
-    prisma.department.create({ data: { name: "Logistics", code: "LOG" } }),
-    prisma.department.create({ data: { name: "Corporate", code: "COR" } }),
-    prisma.department.create({ data: { name: "Sales", code: "SAL" } }),
-    prisma.department.create({ data: { name: "R&D", code: "RND" } }),
-  ]);
-  console.log("  departments: 5");
+  await prisma.trainingCompletion.deleteMany();
+  await prisma.trainingProgram.deleteMany();
+  await prisma.diversityMetric.deleteMany();
+  await prisma.employeeParticipation.deleteMany();
+  await prisma.csrActivity.deleteMany();
 
-  // Emission factors
-  const [diesel, electricity, freight, naturalGas] = await Promise.all([
-    prisma.emissionFactor.create({
-      data: { name: "Diesel combustion", category: "Fuel", unit: "litre", co2PerUnit: 2.68 },
-    }),
-    prisma.emissionFactor.create({
-      data: { name: "Grid electricity (IN)", category: "Electricity", unit: "kWh", co2PerUnit: 0.71 },
-    }),
-    prisma.emissionFactor.create({
-      data: { name: "Road freight", category: "Freight", unit: "tonne-km", co2PerUnit: 0.12 },
-    }),
-    prisma.emissionFactor.create({
-      data: { name: "Natural gas", category: "Fuel", unit: "m3", co2PerUnit: 2.03 },
-    }),
-  ]);
-  console.log("  emission factors: 4");
+  console.log("🧹 Cleaned existing data");
 
-  // Product ESG profiles
-  await prisma.productESGProfile.createMany({
+  // ─── CSR Activities ──────────────────────────────────────────────────────────
+
+  const treePlanting = await prisma.csrActivity.create({
+    data: {
+      title: "Tree Planting Drive",
+      description:
+        "Company-wide tree planting initiative across three urban parks to offset carbon emissions and improve local biodiversity.",
+      category: "Environment",
+      department: "Operations",
+      location: "Green Valley Park",
+      date: new Date("2025-06-15"),
+      durationHours: 6,
+      maxParticipants: 50,
+      status: "Active",
+      organizer: "Ava Patel",
+    },
+  });
+
+  const foodBank = await prisma.csrActivity.create({
+    data: {
+      title: "Community Food Bank",
+      description:
+        "Volunteer at the city food bank to sort and distribute meals to underserved communities.",
+      category: "Community",
+      department: "HR",
+      location: "Downtown Food Bank",
+      date: new Date("2025-07-20"),
+      durationHours: 4,
+      maxParticipants: 30,
+      status: "Active",
+      organizer: "Liam Chen",
+    },
+  });
+
+  const beachCleanup = await prisma.csrActivity.create({
+    data: {
+      title: "Beach Cleanup Campaign",
+      description:
+        "Organize a coastal cleanup to remove plastic waste and promote ocean conservation awareness.",
+      category: "Environment",
+      department: "Marketing",
+      location: "Sunrise Beach",
+      date: new Date("2025-08-10"),
+      durationHours: 5,
+      maxParticipants: 40,
+      status: "Draft",
+      organizer: "Sophia Williams",
+    },
+  });
+
+  const codingWorkshop = await prisma.csrActivity.create({
+    data: {
+      title: "Youth Coding Workshop",
+      description:
+        "Free coding bootcamp for underprivileged high school students, teaching web development fundamentals.",
+      category: "Education",
+      department: "Engineering",
+      location: "Community Center Hall B",
+      date: new Date("2025-05-10"),
+      durationHours: 8,
+      maxParticipants: 25,
+      status: "Completed",
+      organizer: "Noah Singh",
+    },
+  });
+
+  const healthCamp = await prisma.csrActivity.create({
+    data: {
+      title: "Employee Health Camp",
+      description:
+        "Free health checkups and wellness sessions for employees and their families.",
+      category: "Health",
+      department: "HR",
+      location: "Office Campus - Block A",
+      date: new Date("2025-09-05"),
+      durationHours: 3,
+      maxParticipants: 100,
+      status: "Active",
+      organizer: "Emma Brooks",
+    },
+  });
+
+  console.log("🌿 Created 5 CSR Activities");
+
+  // ─── Employee Participation ──────────────────────────────────────────────────
+
+  await prisma.employeeParticipation.createMany({
     data: [
-      { productName: "Recycled Steel Bracket", productCode: "RSB-100", category: "Components", carbonFootprint: 4.2, sustainableFlag: true },
-      { productName: "Standard Plastic Housing", productCode: "SPH-220", category: "Components", carbonFootprint: 11.8, sustainableFlag: false },
-      { productName: "Bio-based Packaging", productCode: "BBP-050", category: "Packaging", carbonFootprint: 0.9, sustainableFlag: true },
-      { productName: "Aluminium Frame", productCode: "ALF-330", category: "Components", carbonFootprint: 16.4, sustainableFlag: false },
+      {
+        activityId: treePlanting.id,
+        employeeName: "Liam Chen",
+        employeeId: "EMP-001",
+        department: "Procurement",
+        proof: "https://storage.example.com/proof/tree-planting-liam.jpg",
+        approvalStatus: "Approved",
+        pointsEarned: 50,
+        completionDate: new Date("2025-06-15"),
+        reviewedBy: "Ava Patel",
+        reviewedDate: new Date("2025-06-16"),
+      },
+      {
+        activityId: treePlanting.id,
+        employeeName: "Sophia Williams",
+        employeeId: "EMP-002",
+        department: "Marketing",
+        proof: null,
+        approvalStatus: "Pending",
+        pointsEarned: 0,
+      },
+      {
+        activityId: foodBank.id,
+        employeeName: "Noah Singh",
+        employeeId: "EMP-003",
+        department: "Engineering",
+        proof: "https://storage.example.com/proof/food-bank-noah.jpg",
+        approvalStatus: "Approved",
+        pointsEarned: 40,
+        completionDate: new Date("2025-07-20"),
+        reviewedBy: "Liam Chen",
+        reviewedDate: new Date("2025-07-21"),
+      },
+      {
+        activityId: foodBank.id,
+        employeeName: "Emma Brooks",
+        employeeId: "EMP-004",
+        department: "Operations",
+        proof: "https://storage.example.com/proof/food-bank-emma.jpg",
+        approvalStatus: "Rejected",
+        pointsEarned: 0,
+        reviewedBy: "Liam Chen",
+        reviewedDate: new Date("2025-07-22"),
+        rejectionReason: "Photo does not show participation at the event.",
+      },
+      {
+        activityId: codingWorkshop.id,
+        employeeName: "Olivia Carter",
+        employeeId: "EMP-005",
+        department: "Engineering",
+        proof: "https://storage.example.com/proof/workshop-olivia.jpg",
+        approvalStatus: "Approved",
+        pointsEarned: 60,
+        completionDate: new Date("2025-05-10"),
+        reviewedBy: "Noah Singh",
+        reviewedDate: new Date("2025-05-11"),
+      },
+      {
+        activityId: healthCamp.id,
+        employeeName: "Ava Patel",
+        employeeId: "EMP-006",
+        department: "Operations",
+        proof: null,
+        approvalStatus: "Pending",
+        pointsEarned: 0,
+      },
     ],
   });
-  console.log("  product ESG profiles: 4");
 
-  // Carbon transactions — co2Kg computed exactly as the API computes it:
-  //   co2Kg = activityAmount * emissionFactor.co2PerUnit
-  await prisma.carbonTransaction.createMany({
+  console.log("👥 Created 6 Employee Participations");
+
+  // ─── Diversity Metrics ───────────────────────────────────────────────────────
+
+  await prisma.diversityMetric.createMany({
     data: [
-      { departmentId: logistics.id, emissionFactorId: diesel.id, sourceType: "FLEET", sourceRef: "FLEET-2026-0142", activityAmount: 1200, co2Kg: 1200 * 2.68, autoGenerated: true, transactionDate: new Date("2026-07-02") },
-      { departmentId: logistics.id, emissionFactorId: freight.id, sourceType: "PURCHASE", sourceRef: "PO-2026-0781", activityAmount: 8400, co2Kg: 8400 * 0.12, autoGenerated: true, transactionDate: new Date("2026-07-04") },
-      { departmentId: logistics.id, emissionFactorId: diesel.id, sourceType: "FLEET", sourceRef: "FLEET-2026-0155", activityAmount: 940, co2Kg: 940 * 2.68, autoGenerated: true, transactionDate: new Date("2026-07-09") },
-      { departmentId: manufacturing.id, emissionFactorId: electricity.id, sourceType: "MANUFACTURING", sourceRef: "MFG-RUN-3391", activityAmount: 15600, co2Kg: 15600 * 0.71, autoGenerated: true, transactionDate: new Date("2026-07-01") },
-      { departmentId: manufacturing.id, emissionFactorId: naturalGas.id, sourceType: "MANUFACTURING", sourceRef: "MFG-RUN-3392", activityAmount: 2300, co2Kg: 2300 * 2.03, autoGenerated: true, transactionDate: new Date("2026-07-06") },
-      { departmentId: corporate.id, emissionFactorId: electricity.id, sourceType: "EXPENSE", sourceRef: "EXP-2026-1120", activityAmount: 4100, co2Kg: 4100 * 0.71, autoGenerated: true, transactionDate: new Date("2026-07-03") },
-      { departmentId: sales.id, emissionFactorId: diesel.id, sourceType: "EXPENSE", sourceRef: "EXP-2026-1131", activityAmount: 320, co2Kg: 320 * 2.68, autoGenerated: true, transactionDate: new Date("2026-07-07") },
-      { departmentId: rnd.id, emissionFactorId: electricity.id, sourceType: "MANUAL", activityAmount: 900, co2Kg: 900 * 0.71, autoGenerated: false, transactionDate: new Date("2026-07-08") },
+      // Gender - Operations
+      { department: "Operations", category: "Gender", label: "Male", value: 45, total: 80, period: "Q2 2025", year: 2025 },
+      { department: "Operations", category: "Gender", label: "Female", value: 30, total: 80, period: "Q2 2025", year: 2025 },
+      { department: "Operations", category: "Gender", label: "Non-binary", value: 5, total: 80, period: "Q2 2025", year: 2025 },
+      // Gender - Engineering
+      { department: "Engineering", category: "Gender", label: "Male", value: 60, total: 100, period: "Q2 2025", year: 2025 },
+      { department: "Engineering", category: "Gender", label: "Female", value: 35, total: 100, period: "Q2 2025", year: 2025 },
+      { department: "Engineering", category: "Gender", label: "Non-binary", value: 5, total: 100, period: "Q2 2025", year: 2025 },
+      // Gender - HR
+      { department: "HR", category: "Gender", label: "Male", value: 12, total: 30, period: "Q2 2025", year: 2025 },
+      { department: "HR", category: "Gender", label: "Female", value: 16, total: 30, period: "Q2 2025", year: 2025 },
+      { department: "HR", category: "Gender", label: "Non-binary", value: 2, total: 30, period: "Q2 2025", year: 2025 },
+      // Age Group - Operations
+      { department: "Operations", category: "Age Group", label: "18-24", value: 10, total: 80, period: "Q2 2025", year: 2025 },
+      { department: "Operations", category: "Age Group", label: "25-34", value: 30, total: 80, period: "Q2 2025", year: 2025 },
+      { department: "Operations", category: "Age Group", label: "35-44", value: 25, total: 80, period: "Q2 2025", year: 2025 },
+      { department: "Operations", category: "Age Group", label: "45+", value: 15, total: 80, period: "Q2 2025", year: 2025 },
+      // Ethnicity - Engineering
+      { department: "Engineering", category: "Ethnicity", label: "Asian", value: 40, total: 100, period: "Q2 2025", year: 2025 },
+      { department: "Engineering", category: "Ethnicity", label: "White", value: 30, total: 100, period: "Q2 2025", year: 2025 },
+      { department: "Engineering", category: "Ethnicity", label: "Hispanic", value: 15, total: 100, period: "Q2 2025", year: 2025 },
+      { department: "Engineering", category: "Ethnicity", label: "Black", value: 10, total: 100, period: "Q2 2025", year: 2025 },
+      { department: "Engineering", category: "Ethnicity", label: "Other", value: 5, total: 100, period: "Q2 2025", year: 2025 },
     ],
   });
-  console.log("  carbon transactions: 8");
 
-  // Goals — stored in kg. Wireframe displays tonnes; the UI formats.
-  // Ratios match the wireframe exactly: 390/500=78%, 98/120=82%, 80/80=100%
-  await prisma.environmentalGoal.createMany({
+  console.log("📊 Created 18 Diversity Metrics");
+
+  // ─── Training Programs ───────────────────────────────────────────────────────
+
+  const esgTraining = await prisma.trainingProgram.create({
+    data: {
+      title: "ESG Fundamentals",
+      description:
+        "Comprehensive overview of Environmental, Social, and Governance principles, reporting frameworks, and organizational impact.",
+      category: "ESG Awareness",
+      department: "All",
+      trainer: "Dr. Sarah Mitchell",
+      durationHours: 8,
+      mandatory: true,
+      startDate: new Date("2025-06-01"),
+      endDate: new Date("2025-06-30"),
+      status: "In Progress",
+      maxCapacity: 200,
+    },
+  });
+
+  const safetyTraining = await prisma.trainingProgram.create({
+    data: {
+      title: "Workplace Safety Standards",
+      description:
+        "OSHA compliance, hazard identification, emergency procedures, and personal protective equipment usage.",
+      category: "Safety",
+      department: "Operations",
+      trainer: "Mark Thompson",
+      durationHours: 4,
+      mandatory: true,
+      startDate: new Date("2025-07-01"),
+      endDate: new Date("2025-07-15"),
+      status: "Scheduled",
+      maxCapacity: 80,
+    },
+  });
+
+  const deiTraining = await prisma.trainingProgram.create({
+    data: {
+      title: "Diversity, Equity & Inclusion",
+      description:
+        "Building inclusive workplaces through understanding unconscious bias, cultural competency, and equitable practices.",
+      category: "DEI",
+      department: "All",
+      trainer: "Prof. Angela Davis",
+      durationHours: 6,
+      mandatory: false,
+      startDate: new Date("2025-05-01"),
+      endDate: new Date("2025-05-31"),
+      status: "Completed",
+      maxCapacity: 150,
+    },
+  });
+
+  const complianceTraining = await prisma.trainingProgram.create({
+    data: {
+      title: "ESG Compliance & Reporting",
+      description:
+        "Deep dive into ESG regulatory requirements, reporting standards (GRI, SASB), and compliance best practices.",
+      category: "Compliance",
+      department: "Finance",
+      trainer: "Jennifer Liu",
+      durationHours: 10,
+      mandatory: true,
+      startDate: new Date("2025-08-01"),
+      endDate: new Date("2025-08-31"),
+      status: "Scheduled",
+      maxCapacity: 50,
+    },
+  });
+
+  console.log("📚 Created 4 Training Programs");
+
+  // ─── Training Completions ────────────────────────────────────────────────────
+
+  await prisma.trainingCompletion.createMany({
     data: [
-      { name: "Reduce Fleet Emissions", departmentId: logistics.id, targetCo2Kg: 500_000, currentCo2Kg: 390_000, deadline: new Date("2026-12-31"), status: "ACTIVE" },
-      { name: "Cut Packaging Waste", departmentId: manufacturing.id, targetCo2Kg: 120_000, currentCo2Kg: 98_000, deadline: new Date("2026-09-30"), status: "ON_TRACK" },
-      { name: "Office Energy Cut", departmentId: corporate.id, targetCo2Kg: 80_000, currentCo2Kg: 80_000, deadline: new Date("2026-06-30"), status: "COMPLETED" },
-      // Deliberately past-deadline and incomplete — exercises the AT_RISK path
-      // in deriveGoalStatus() so you can see auto-derivation working.
-      { name: "Cut R&D Lab Power", departmentId: rnd.id, targetCo2Kg: 60_000, currentCo2Kg: 25_000, deadline: new Date("2026-05-31"), status: "ACTIVE" },
+      {
+        trainingId: esgTraining.id,
+        employeeName: "Liam Chen",
+        employeeId: "EMP-001",
+        department: "Procurement",
+        completionDate: new Date("2025-06-20"),
+        score: 92,
+        status: "Completed",
+        certificateUrl: "https://certs.example.com/esg-fundamentals/EMP-001",
+      },
+      {
+        trainingId: esgTraining.id,
+        employeeName: "Sophia Williams",
+        employeeId: "EMP-002",
+        department: "Marketing",
+        completionDate: null,
+        score: null,
+        status: "In Progress",
+      },
+      {
+        trainingId: deiTraining.id,
+        employeeName: "Noah Singh",
+        employeeId: "EMP-003",
+        department: "Engineering",
+        completionDate: new Date("2025-05-25"),
+        score: 88,
+        status: "Completed",
+        certificateUrl: "https://certs.example.com/dei/EMP-003",
+      },
+      {
+        trainingId: deiTraining.id,
+        employeeName: "Emma Brooks",
+        employeeId: "EMP-004",
+        department: "Operations",
+        completionDate: new Date("2025-05-28"),
+        score: 75,
+        status: "Completed",
+        certificateUrl: "https://certs.example.com/dei/EMP-004",
+      },
+      {
+        trainingId: esgTraining.id,
+        employeeName: "Olivia Carter",
+        employeeId: "EMP-005",
+        department: "Engineering",
+        completionDate: null,
+        score: null,
+        status: "Not Started",
+      },
+      {
+        trainingId: safetyTraining.id,
+        employeeName: "Ava Patel",
+        employeeId: "EMP-006",
+        department: "Operations",
+        completionDate: null,
+        score: null,
+        status: "Not Started",
+      },
     ],
   });
-  console.log("  environmental goals: 4");
 
-  console.log("\nSeed complete.\n");
-  console.log("Department IDs (for testing POSTs):");
-  for (const d of [manufacturing, logistics, corporate, sales, rnd]) {
-    console.log(`  ${d.name.padEnd(15)} ${d.id}`);
-  }
-  console.log("\nEmission Factor IDs:");
-  for (const f of [diesel, electricity, freight, naturalGas]) {
-    console.log(`  ${f.name.padEnd(22)} ${f.id}`);
-  }
+  console.log("✅ Created 6 Training Completions");
+
+  // ─── Governance Module ────────────────────────────────────────────────────────
+
+  await prisma.policy.createMany({
+    data: [
+      {
+        id: "POL-001",
+        title: "Environmental Management Policy",
+        department: "Operations",
+        description: "Defines environmental stewardship and waste management procedures.",
+        status: "Active",
+        version: "2.1",
+        effectiveDate: "2025-01-15"
+      },
+      {
+        id: "POL-002",
+        title: "Vendor Compliance Policy",
+        department: "Procurement",
+        description: "Establishes supplier ESG disclosure requirements.",
+        status: "Active",
+        version: "1.4",
+        effectiveDate: "2025-03-01"
+      },
+      {
+        id: "POL-003",
+        title: "Chemical Safety Policy",
+        department: "Manufacturing",
+        description: "Standards for hazardous material handling and documentation.",
+        status: "Draft",
+        version: "0.9",
+        effectiveDate: "2025-09-01"
+      }
+    ]
+  });
+
+  await prisma.policyAcknowledgement.createMany({
+    data: [
+      {
+        id: "ACK-001",
+        policyId: "POL-001",
+        employeeName: "Ava Patel",
+        department: "Operations",
+        status: "Acknowledged",
+        dateSigned: "2025-01-20"
+      },
+      {
+        id: "ACK-002",
+        policyId: "POL-002",
+        employeeName: "Liam Chen",
+        department: "Procurement",
+        status: "Pending",
+        dateSigned: null
+      },
+      {
+        id: "ACK-003",
+        policyId: "POL-003",
+        employeeName: "Sophia Williams",
+        department: "Manufacturing",
+        status: "Pending",
+        dateSigned: null
+      }
+    ]
+  });
+
+  await prisma.audit.createMany({
+    data: [
+      {
+        id: "AUD-001",
+        title: "Q2 Waste Audit",
+        department: "Operations",
+        auditor: "Emma Brooks",
+        date: "2025-06-12",
+        findings: "Minor waste segregation inconsistencies.",
+        status: "Completed"
+      },
+      {
+        id: "AUD-002",
+        title: "Vendor Compliance Check",
+        department: "Procurement",
+        auditor: "Noah Singh",
+        date: "2025-07-02",
+        findings: "Awaiting vendor disclosure verification.",
+        status: "Under Review"
+      },
+      {
+        id: "AUD-003",
+        title: "Safety Documentation Review",
+        department: "Manufacturing",
+        auditor: "Olivia Carter",
+        date: "2025-08-15",
+        findings: "Scheduled inspection.",
+        status: "Scheduled"
+      }
+    ]
+  });
+
+  await prisma.complianceIssue.createMany({
+    data: [
+      {
+        id: "CMP-001",
+        auditId: "AUD-001",
+        issue: "Missing MSDS sheets",
+        severity: "High",
+        department: "Manufacturing",
+        status: "Open"
+      },
+      {
+        id: "CMP-002",
+        auditId: "AUD-002",
+        issue: "Late vendor disclosure",
+        severity: "Medium",
+        department: "Procurement",
+        status: "In Progress"
+      },
+      {
+        id: "CMP-003",
+        auditId: "AUD-001",
+        issue: "Waste container labeling",
+        severity: "Low",
+        department: "Operations",
+        status: "Resolved"
+      }
+    ]
+  });
+
+  console.log("⚖️ Created Governance Policies and Audits");
+
+  await seedEnvironmental(prisma);
+
+  console.log("\n🎉 Seed completed successfully!");
 }
 
 main()
   .catch((e) => {
-    console.error(e);
+    console.error("❌ Seed failed:", e);
     process.exit(1);
   })
   .finally(async () => {

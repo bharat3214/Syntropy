@@ -1,15 +1,14 @@
 // ============================================================================
-// ENVIRONMENTAL MODULE — standalone schema
+// SYNTROPY — MERGED SCHEMA
 // ============================================================================
+// Contains: Social, Governance, Environmental.
+// Gamification is not on main yet — add it here when that branch merges.
 //
-// MERGE CONTRACT — the one thing that must stay identical across all modules:
-//   model Department {
-//     id   String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-//     name String @unique
-//     ...
-//   }
-//   Every module FKs to Department.id as `String @db.Uuid`.
-//   If everyone holds this shape, the merge is mechanical.
+// NOTE FOR THE TEAM:
+//   - Environmental uses a real `Department` table with UUID FKs.
+//   - Social and Governance still store `department` as a free-text String.
+//   - These must be reconciled before Department Score / Overall ESG Score
+//     can work (PS §5). Environmental's shape is the one that supports it.
 // ============================================================================
 
 generator client {
@@ -20,12 +19,7 @@ datasource db {
   provider = "postgresql"
 }
 
-// ----------------------------------------------------------------------------
-// SHARED MASTER DATA
-// Defined here so Environmental can run standalone. At merge time this model
-// is owned by whoever takes Settings — my copy gets deleted, not theirs.
-// The FK shape is what matters, not who declares it.
-// ----------------------------------------------------------------------------
+// ─── Shared Master Data ──────────────────────────────────────────────────────
 
 model Department {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -39,9 +33,147 @@ model Department {
   @@map("departments")
 }
 
-// ----------------------------------------------------------------------------
-// ENVIRONMENTAL — enums
-// ----------------------------------------------------------------------------
+// ─── Social Module ───────────────────────────────────────────────────────────
+
+model CsrActivity {
+  id              String   @id @default(cuid())
+  title           String
+  description     String
+  category        String // Environment, Community, Education, Health
+  department      String
+  location        String
+  date            DateTime
+  durationHours   Float
+  maxParticipants Int
+  status          String   @default("Draft") // Draft, Active, Completed, Cancelled
+  organizer       String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  participations EmployeeParticipation[]
+
+  @@map("csr_activities")
+}
+
+model EmployeeParticipation {
+  id              String    @id @default(cuid())
+  activityId      String
+  employeeName    String
+  employeeId      String
+  department      String
+  proof           String?
+  approvalStatus  String    @default("Pending") // Pending, Approved, Rejected
+  pointsEarned    Int       @default(0)
+  completionDate  DateTime?
+  registeredDate  DateTime  @default(now())
+  reviewedBy      String?
+  reviewedDate    DateTime?
+  rejectionReason String?
+
+  activity CsrActivity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  @@unique([activityId, employeeId])
+  @@map("employee_participations")
+}
+
+model DiversityMetric {
+  id         String   @id @default(cuid())
+  department String
+  category   String // Gender, Ethnicity, Age Group, Disability
+  label      String // e.g. "Female", "25-34", "Asian"
+  value      Int
+  total      Int
+  period     String // e.g. "Q2 2025"
+  year       Int
+  createdAt  DateTime @default(now())
+
+  @@map("diversity_metrics")
+}
+
+model TrainingProgram {
+  id            String   @id @default(cuid())
+  title         String
+  description   String
+  category      String // ESG Awareness, Safety, Compliance, DEI
+  department    String
+  trainer       String
+  durationHours Float
+  mandatory     Boolean  @default(false)
+  startDate     DateTime
+  endDate       DateTime
+  status        String   @default("Scheduled") // Scheduled, In Progress, Completed, Cancelled
+  maxCapacity   Int
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  completions TrainingCompletion[]
+
+  @@map("training_programs")
+}
+
+model TrainingCompletion {
+  id             String    @id @default(cuid())
+  trainingId     String
+  employeeName   String
+  employeeId     String
+  department     String
+  completionDate DateTime?
+  score          Float?
+  status         String    @default("Not Started") // Not Started, In Progress, Completed, Failed
+  certificateUrl String?
+  createdAt      DateTime  @default(now())
+
+  training TrainingProgram @relation(fields: [trainingId], references: [id], onDelete: Cascade)
+
+  @@unique([trainingId, employeeId])
+  @@map("training_completions")
+}
+
+// ─── Governance Module ───────────────────────────────────────────────────────
+
+model Policy {
+  id               String                  @id
+  title            String
+  department       String
+  description      String
+  status           String
+  version          String
+  effectiveDate    String
+  acknowledgements PolicyAcknowledgement[]
+}
+
+model PolicyAcknowledgement {
+  id           String  @id
+  policyId     String
+  employeeName String
+  department   String
+  status       String
+  dateSigned   String?
+  policy       Policy  @relation(fields: [policyId], references: [id], onDelete: Cascade)
+}
+
+model Audit {
+  id               String            @id
+  title            String
+  department       String
+  auditor          String
+  date             String
+  findings         String
+  status           String
+  complianceIssues ComplianceIssue[]
+}
+
+model ComplianceIssue {
+  id         String @id
+  auditId    String
+  issue      String
+  severity   String
+  department String
+  status     String
+  audit      Audit  @relation(fields: [auditId], references: [id], onDelete: Cascade)
+}
+
+// ─── Environmental Module ────────────────────────────────────────────────────
 
 enum EmissionFactorStatus {
   ACTIVE
@@ -63,10 +195,6 @@ enum EnvironmentalGoalStatus {
   COMPLETED
   ARCHIVED
 }
-
-// ----------------------------------------------------------------------------
-// ENVIRONMENTAL — master data
-// ----------------------------------------------------------------------------
 
 model EmissionFactor {
   id         String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -97,10 +225,6 @@ model ProductESGProfile {
 
   @@map("product_esg_profiles")
 }
-
-// ----------------------------------------------------------------------------
-// ENVIRONMENTAL — transactional data
-// ----------------------------------------------------------------------------
 
 model CarbonTransaction {
   id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
