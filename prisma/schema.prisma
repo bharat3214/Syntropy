@@ -1,0 +1,103 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Department {
+  id        String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String     @unique
+  createdAt DateTime   @default(now()) @map("created_at")
+  employees Employee[]
+
+  @@map("departments")
+}
+
+model Employee {
+  id                     String                   @id
+  email                  String                   @unique
+  firstName              String?                  @map("first_name")
+  lastName               String?                  @map("last_name")
+  departmentId           String?                  @db.Uuid @map("department_id")
+  isActive               Boolean                  @default(true) @map("is_active")
+  createdAt              DateTime                 @default(now()) @map("created_at")
+  department             Department?              @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  participations         ChallengeParticipation[]
+  xpLedger               XpLedger[]
+  employeeBadges         EmployeeBadge[]
+
+  @@map("employees")
+}
+
+model Challenge {
+  id               String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title            String
+  description      String
+  xpReward         Int                      @map("xp_reward")
+  status           String                   @default("DRAFT")
+  evidenceRequired Boolean                  @default(false) @map("evidence_required")
+  startDate        DateTime                 @map("start_date")
+  endDate          DateTime                 @map("end_date")
+  createdAt        DateTime                 @default(now()) @map("created_at")
+  participations   ChallengeParticipation[]
+
+  @@map("challenges")
+}
+
+model ChallengeParticipation {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  employeeId  String    @map("employee_id")
+  challengeId String    @db.Uuid @map("challenge_id")
+  status      String    @default("PENDING")
+  proofUrl    String?   @map("proof_url")
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at")
+  employee    Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, challengeId], map: "unique_employee_challenge")
+  @@map("challenge_participations")
+}
+
+model XpLedger {
+  id         BigInt   @id @default(autoincrement())
+  employeeId String   @map("employee_id")
+  amount     Int
+  reason     String
+  createdAt  DateTime @default(now()) @map("created_at")
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@map("xp_ledger")
+}
+
+model Badge {
+  id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String
+  iconUrl        String          @map("icon_url")
+  unlockRule     Json            @map("unlock_rule")
+  employeeBadges EmployeeBadge[]
+
+  @@map("badges")
+}
+
+model EmployeeBadge {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  employeeId String   @map("employee_id")
+  badgeId    String   @db.Uuid @map("badge_id")
+  awardedAt  DateTime @default(now()) @map("awarded_at")
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  badge      Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@map("employee_badges")
+}
+
+model Reward {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  itemName  String   @map("item_name")
+  pointCost Int      @map("point_cost")
+  stockCount Int     @map("stock_count")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("rewards")
+}
