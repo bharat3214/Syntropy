@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/utils/prisma";
+import { prisma } from "@/lib/db";
 
 /**
  * GET /api/social/export?type=activities|participation|training
@@ -21,12 +21,15 @@ export async function GET(request: NextRequest) {
     if (type === "activities") {
       const activities = await prisma.csrActivity.findMany({
         orderBy: { date: "desc" },
-        include: { _count: { select: { participations: true } } },
+        include: {
+          _count: { select: { participations: true } },
+          department: true,
+        },
       });
 
       const headers = ["ID", "Title", "Category", "Department", "Location", "Date", "Duration (hrs)", "Max Participants", "Current Participants", "Status", "Organizer"];
       const rows = activities.map((a) => [
-        a.id, a.title, a.category, a.department, a.location,
+        a.id, a.title, a.category, a.department.name, a.location,
         a.date.toISOString().split("T")[0], a.durationHours, a.maxParticipants,
         a._count.participations, a.status, a.organizer,
       ]);
@@ -37,12 +40,16 @@ export async function GET(request: NextRequest) {
     if (type === "participation") {
       const participations = await prisma.employeeParticipation.findMany({
         orderBy: { registeredDate: "desc" },
-        include: { activity: { select: { title: true } } },
+        include: {
+          activity: { select: { title: true } },
+          department: true,
+          employee: true,
+        },
       });
 
       const headers = ["ID", "Activity", "Employee Name", "Employee ID", "Department", "Status", "Points Earned", "Proof", "Registered Date", "Completion Date", "Reviewed By"];
       const rows = participations.map((p) => [
-        p.id, p.activity.title, p.employeeName, p.employeeId, p.department,
+        p.id, p.activity.title, `${p.employee.firstName} ${p.employee.lastName}`, p.employeeId, p.department.name,
         p.approvalStatus, p.pointsEarned, p.proof || "", p.registeredDate.toISOString().split("T")[0],
         p.completionDate?.toISOString().split("T")[0] || "", p.reviewedBy || "",
       ]);
@@ -53,12 +60,16 @@ export async function GET(request: NextRequest) {
     if (type === "training") {
       const completions = await prisma.trainingCompletion.findMany({
         orderBy: { createdAt: "desc" },
-        include: { training: { select: { title: true } } },
+        include: {
+          training: { select: { title: true } },
+          department: true,
+          employee: true,
+        },
       });
 
       const headers = ["ID", "Training", "Employee Name", "Employee ID", "Department", "Status", "Score", "Completion Date", "Certificate URL"];
       const rows = completions.map((c) => [
-        c.id, c.training.title, c.employeeName, c.employeeId, c.department,
+        c.id, c.training.title, `${c.employee.firstName} ${c.employee.lastName}`, c.employeeId, c.department.name,
         c.status, c.score ?? "", c.completionDate?.toISOString().split("T")[0] || "", c.certificateUrl || "",
       ]);
 

@@ -1,20 +1,20 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/utils/prisma";
+import { prisma } from "@/lib/db";
 
 /**
  * GET /api/social/training
- * List all training programs. Supports ?status=&department=&category=
+ * List all training programs. Supports ?status=&departmentId=&category=
  */
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl;
     const status = searchParams.get("status");
-    const department = searchParams.get("department");
+    const departmentId = searchParams.get("departmentId");
     const category = searchParams.get("category");
 
     const where: Record<string, string> = {};
     if (status) where.status = status;
-    if (department) where.department = department;
+    if (departmentId) where.departmentId = departmentId;
     if (category) where.category = category;
 
     const trainings = await prisma.trainingProgram.findMany({
@@ -38,16 +38,16 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const {
-      title, description, category, department, trainer,
+      title, description, category, departmentId, trainer,
       durationHours, mandatory, startDate, endDate, maxCapacity, status,
     } = body;
 
-    if (!title || !description || !category || !department || !trainer ||
+    if (!title || !description || !category || !departmentId || !trainer ||
         durationHours == null || !startDate || !endDate || maxCapacity == null) {
       return NextResponse.json(
         {
           error: "Missing required fields.",
-          required: ["title", "description", "category", "department", "trainer",
+          required: ["title", "description", "category", "departmentId", "trainer",
                      "durationHours", "startDate", "endDate", "maxCapacity"],
         },
         { status: 400 }
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
         title,
         description,
         category,
-        department,
+        departmentId,
         trainer,
         durationHours: Number(durationHours),
         mandatory: Boolean(mandatory),

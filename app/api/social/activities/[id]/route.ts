@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/utils/prisma";
+import { prisma } from "@/lib/db";
 
 export async function GET(
   _request: NextRequest,
@@ -53,7 +53,7 @@ export async function PATCH(
     if (body.title) updateData.title = body.title;
     if (body.description) updateData.description = body.description;
     if (body.category) updateData.category = body.category;
-    if (body.department) updateData.department = body.department;
+    if (body.departmentId) updateData.departmentId = body.departmentId;
     if (body.location) updateData.location = body.location;
     if (body.date) updateData.date = new Date(body.date);
     if (body.durationHours != null) updateData.durationHours = Number(body.durationHours);

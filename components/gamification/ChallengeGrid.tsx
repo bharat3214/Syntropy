@@ -21,6 +21,7 @@ import {
 export type ChallengeStatus =
   | 'DRAFT'
   | 'ACTIVE'
+  | 'UPCOMING'
   | 'UNDER_REVIEW'
   | 'COMPLETED'
   | 'ARCHIVED';
@@ -64,6 +65,7 @@ function difficultyColor(d: Challenge['difficulty']): string {
 const STATUS_STYLES: Record<ChallengeStatus, { bg: string; text: string; label: string }> = {
   DRAFT: { bg: 'rgba(156,163,175,0.12)', text: '#9CA3AF', label: 'Draft' },
   ACTIVE: { bg: 'rgba(34,197,94,0.12)', text: '#22C55E', label: 'Active' },
+  UPCOMING: { bg: 'rgba(245,158,11,0.12)', text: '#F59E0B', label: 'Upcoming' },
   UNDER_REVIEW: { bg: 'rgba(245,158,11,0.12)', text: '#F59E0B', label: 'Under Review' },
   COMPLETED: { bg: 'rgba(59,130,246,0.12)', text: '#3B82F6', label: 'Completed' },
   ARCHIVED: { bg: 'rgba(107,114,128,0.12)', text: '#6B7280', label: 'Archived' },

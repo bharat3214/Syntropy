@@ -1,21 +1,21 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/utils/prisma";
+import { prisma } from "@/lib/db";
 
 /**
  * GET /api/social/participation
- * List all participations. Supports ?activityId=&status=&department=
+ * List all participations. Supports ?activityId=&status=&departmentId=
  */
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl;
     const activityId = searchParams.get("activityId");
     const status = searchParams.get("status");
-    const department = searchParams.get("department");
+    const departmentId = searchParams.get("departmentId");
 
     const where: Record<string, string> = {};
     if (activityId) where.activityId = activityId;
     if (status) where.approvalStatus = status;
-    if (department) where.department = department;
+    if (departmentId) where.departmentId = departmentId;
 
     const participations = await prisma.employeeParticipation.findMany({
       where,
@@ -38,11 +38,11 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { activityId, employeeName, employeeId, department, proof } = body;
+    const { activityId, employeeId, departmentId, proof } = body;
 
-    if (!activityId || !employeeName || !employeeId || !department) {
+    if (!activityId || !employeeId || !departmentId) {
       return NextResponse.json(
-        { error: "Missing required fields.", required: ["activityId", "employeeName", "employeeId", "department"] },
+        { error: "Missing required fields.", required: ["activityId", "employeeId", "departmentId"] },
         { status: 400 }
       );
     }
@@ -86,9 +86,8 @@ export async function POST(request: NextRequest) {
     const participation = await prisma.employeeParticipation.create({
       data: {
         activityId,
-        employeeName,
         employeeId,
-        department,
+        departmentId,
         proof: proof || null,
       },
       include: { activity: { select: { title: true } } },

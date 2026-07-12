@@ -1,22 +1,22 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/utils/prisma";
+import { prisma } from "@/lib/db";
 
 /**
  * GET /api/social/activities
  *
  * List all CSR activities with participation counts.
- * Supports query params: ?status=Active&department=Operations&category=Environment
+ * Supports query params: ?status=Active&departmentId=...&category=Environment
  */
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl;
     const status = searchParams.get("status");
-    const department = searchParams.get("department");
+    const departmentId = searchParams.get("departmentId");
     const category = searchParams.get("category");
 
     const where: Record<string, string> = {};
     if (status) where.status = status;
-    if (department) where.department = department;
+    if (departmentId) where.departmentId = departmentId;
     if (category) where.category = category;
 
     const activities = await prisma.csrActivity.findMany({
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
       title,
       description,
       category,
-      department,
+      departmentId,
       location,
       date,
       durationHours,
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
       !title ||
       !description ||
       !category ||
-      !department ||
+      !departmentId ||
       !location ||
       !date ||
       durationHours == null ||
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
             "title",
             "description",
             "category",
-            "department",
+            "departmentId",
             "location",
             "date",
             "durationHours",
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
         title,
         description,
         category,
-        department,
+        departmentId,
         location,
         date: new Date(date),
         durationHours: Number(durationHours),

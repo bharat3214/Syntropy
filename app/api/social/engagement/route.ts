@@ -1,40 +1,19 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/utils/prisma";
+import { prisma } from "@/lib/db";
 
-/**
- * GET /api/social/engagement
- * Returns computed engagement analytics — no stored data, all derived from existing tables.
- */
 export async function GET() {
   try {
-    const [
-      activities,
-      participations,
-      trainingCompletions,
-      trainings,
-    ] = await Promise.all([
+    const [activities, participations, trainingCompletions, trainings] = await Promise.all([
       prisma.csrActivity.findMany({ select: { id: true, status: true, category: true } }),
       prisma.employeeParticipation.findMany({
-        select: {
-          department: true,
-          approvalStatus: true,
-          pointsEarned: true,
-          registeredDate: true,
-          activity: { select: { category: true } },
-        },
+        include: { department: true, activity: true },
       }),
       prisma.trainingCompletion.findMany({
-        select: {
-          department: true,
-          status: true,
-          createdAt: true,
-          training: { select: { category: true } },
-        },
+        include: { department: true, training: true },
       }),
       prisma.trainingProgram.findMany({ select: { id: true, status: true, category: true } }),
     ]);
 
-    // ── Overview ──────────────────────────────────────────────────────────────
     const approved = participations.filter((p) => p.approvalStatus === "Approved").length;
     const completedTC = trainingCompletions.filter((tc) => tc.status === "Completed").length;
 
@@ -44,37 +23,37 @@ export async function GET() {
       totalParticipations: participations.length,
       approvedParticipations: approved,
       pendingParticipations: participations.filter((p) => p.approvalStatus === "Pending").length,
-      participationApprovalRate: participations.length > 0
-        ? Math.round((approved / participations.length) * 1000) / 10 : 0,
+      participationApprovalRate:
+        participations.length > 0 ? Math.round((approved / participations.length) * 1000) / 10 : 0,
       totalTrainings: trainings.length,
       completedTrainingRecords: completedTC,
-      trainingCompletionRate: trainingCompletions.length > 0
-        ? Math.round((completedTC / trainingCompletions.length) * 1000) / 10 : 0,
+      trainingCompletionRate:
+        trainingCompletions.length > 0 ? Math.round((completedTC / trainingCompletions.length) * 1000) / 10 : 0,
       totalPointsAwarded: participations.reduce((s, p) => s + p.pointsEarned, 0),
     };
 
-    // ── Department engagement ─────────────────────────────────────────────────
-    const deptMap = new Map<string, { participations: number; trainingsCompleted: number; pointsEarned: number }>();
+    const deptMap = new Map<string, { departmentName: string; participations: number; trainingsCompleted: number; pointsEarned: number }>();
 
     for (const p of participations) {
-      const entry = deptMap.get(p.department) || { participations: 0, trainingsCompleted: 0, pointsEarned: 0 };
+      const key = p.departmentId;
+      const entry = deptMap.get(key) || { departmentName: p.department.name, participations: 0, trainingsCompleted: 0, pointsEarned: 0 };
       entry.participations++;
       entry.pointsEarned += p.pointsEarned;
-      deptMap.set(p.department, entry);
+      deptMap.set(key, entry);
     }
     for (const tc of trainingCompletions) {
       if (tc.status === "Completed") {
-        const entry = deptMap.get(tc.department) || { participations: 0, trainingsCompleted: 0, pointsEarned: 0 };
+        const key = tc.departmentId;
+        const entry = deptMap.get(key) || { departmentName: tc.department.name, participations: 0, trainingsCompleted: 0, pointsEarned: 0 };
         entry.trainingsCompleted++;
-        deptMap.set(tc.department, entry);
+        deptMap.set(key, entry);
       }
     }
 
     const departmentEngagement = Array.from(deptMap.entries())
-      .map(([department, data]) => ({ department, ...data }))
+      .map(([departmentId, data]) => ({ departmentId, departmentName: data.departmentName, participations: data.participations, trainingsCompleted: data.trainingsCompleted, pointsEarned: data.pointsEarned }))
       .sort((a, b) => b.pointsEarned - a.pointsEarned);
 
-    // ── Monthly trend ─────────────────────────────────────────────────────────
     const monthMap = new Map<string, { participations: number; trainingsCompleted: number }>();
 
     for (const p of participations) {
@@ -96,7 +75,6 @@ export async function GET() {
       .map(([month, data]) => ({ month, ...data }))
       .sort((a, b) => a.month.localeCompare(b.month));
 
-    // ── Category breakdown ────────────────────────────────────────────────────
     const actCats: Record<string, number> = {};
     for (const a of activities) {
       actCats[a.category] = (actCats[a.category] || 0) + 1;

@@ -1,35 +1,35 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/utils/prisma";
+import { prisma } from "@/lib/db";
 
 /**
  * GET /api/social/diversity
- * List all diversity metrics. Supports ?department=&category=&year=
+ * List all diversity metrics. Supports ?departmentId=&category=&year=
  */
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl;
-    const department = searchParams.get("department");
+    const departmentId = searchParams.get("departmentId");
     const category = searchParams.get("category");
     const year = searchParams.get("year");
 
     const where: Record<string, unknown> = {};
-    if (department) where.department = department;
+    if (departmentId) where.departmentId = departmentId;
     if (category) where.category = category;
     if (year) where.year = Number(year);
 
     const metrics = await prisma.diversityMetric.findMany({
       where,
-      orderBy: [{ department: "asc" }, { category: "asc" }, { label: "asc" }],
+      orderBy: [{ departmentId: "asc" }, { category: "asc" }, { label: "asc" }],
     });
 
-    // Group by department and category for easier frontend consumption
+    // Group by departmentId and category for easier frontend consumption
     const grouped: Record<string, Record<string, typeof metrics>> = {};
     for (const metric of metrics) {
-      if (!grouped[metric.department]) grouped[metric.department] = {};
-      if (!grouped[metric.department][metric.category]) {
-        grouped[metric.department][metric.category] = [];
+      if (!grouped[metric.departmentId]) grouped[metric.departmentId] = {};
+      if (!grouped[metric.departmentId][metric.category]) {
+        grouped[metric.departmentId][metric.category] = [];
       }
-      grouped[metric.department][metric.category].push(metric);
+      grouped[metric.departmentId][metric.category].push(metric);
     }
 
     return NextResponse.json({ metrics, grouped });
@@ -46,11 +46,11 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { department, category, label, value, total, period, year } = body;
+    const { departmentId, category, label, value, total, period, year } = body;
 
-    if (!department || !category || !label || value == null || total == null || !period || year == null) {
+    if (!departmentId || !category || !label || value == null || total == null || !period || year == null) {
       return NextResponse.json(
-        { error: "Missing required fields.", required: ["department", "category", "label", "value", "total", "period", "year"] },
+        { error: "Missing required fields.", required: ["departmentId", "category", "label", "value", "total", "period", "year"] },
         { status: 400 }
       );
     }
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
 
     const metric = await prisma.diversityMetric.create({
       data: {
-        department,
+        departmentId,
         category,
         label,
         value: Number(value),
