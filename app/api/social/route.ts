@@ -59,7 +59,14 @@ export async function GET() {
       totalPointsAwarded,
     };
 
-    return NextResponse.json({ activities, participations, diversityMetrics, trainings, trainingCompletions, engagement });
+    return NextResponse.json({
+      activities: activities.map((a) => ({ ...a, department: a.department.name })),
+      participations: participations.map((p) => ({ ...p, department: p.department.name })),
+      diversityMetrics: diversityMetrics.map((d) => ({ ...d, department: d.department.name })),
+      trainings: trainings.map((t) => ({ ...t, department: t.department.name })),
+      trainingCompletions: trainingCompletions.map((tc) => ({ ...tc, department: tc.department.name })),
+      engagement,
+    });
   } catch (error) {
     console.error("GET /api/social error:", error);
     return NextResponse.json({ error: "Failed to fetch social data." }, { status: 500 });
