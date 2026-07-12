@@ -1,5 +1,8 @@
-export default function DashboardPage() {
+export default function Dashboard() {
   return (
-    <div style={{ background: '#0B0F0D', minHeight: '100vh' }} />
+    <div className="p-8">
+      <h1 className="text-2xl font-bold">EcoSphere Dashboard</h1>
+      <p className="text-zinc-600">Welcome to the ESG Management Platform.</p>
+    </div>
   );
 }
