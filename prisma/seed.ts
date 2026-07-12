@@ -1,7 +1,9 @@
 import "dotenv/config";
-import { PrismaClient } from "./generated/client/client";
+import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
+import { seedEnvironmental } from "./seed-environmental";
+
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
@@ -476,6 +478,9 @@ async function main() {
   });
 
   console.log("⚖️ Created Governance Policies and Audits");
+
+  await seedEnvironmental(prisma);
+
   console.log("\n🎉 Seed completed successfully!");
 }
 

@@ -1,10 +1,36 @@
+// ============================================================================
+// SYNTROPY — MERGED SCHEMA
+// ============================================================================
+// Contains: Social, Governance, Environmental.
+// Gamification is not on main yet — add it here when that branch merges.
+//
+// NOTE FOR THE TEAM:
+//   - Environmental uses a real `Department` table with UUID FKs.
+//   - Social and Governance still store `department` as a free-text String.
+//   - These must be reconciled before Department Score / Overall ESG Score
+//     can work (PS §5). Environmental's shape is the one that supports it.
+// ============================================================================
+
 generator client {
-  provider = "prisma-client"
-  output   = "./generated/client"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+// ─── Shared Master Data ──────────────────────────────────────────────────────
+
+model Department {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String   @unique
+  code      String?  @unique
+  createdAt DateTime @default(now()) @map("created_at")
+
+  carbonTransactions CarbonTransaction[]
+  environmentalGoals EnvironmentalGoal[]
+
+  @@map("departments")
 }
 
 // ─── Social Module ───────────────────────────────────────────────────────────
@@ -13,7 +39,7 @@ model CsrActivity {
   id              String   @id @default(cuid())
   title           String
   description     String
-  category        String   // Environment, Community, Education, Health
+  category        String // Environment, Community, Education, Health
   department      String
   location        String
   date            DateTime
@@ -53,11 +79,11 @@ model EmployeeParticipation {
 model DiversityMetric {
   id         String   @id @default(cuid())
   department String
-  category   String   // Gender, Ethnicity, Age Group, Disability
-  label      String   // e.g. "Female", "25-34", "Asian"
+  category   String // Gender, Ethnicity, Age Group, Disability
+  label      String // e.g. "Female", "25-34", "Asian"
   value      Int
   total      Int
-  period     String   // e.g. "Q2 2025"
+  period     String // e.g. "Q2 2025"
   year       Int
   createdAt  DateTime @default(now())
 
@@ -68,7 +94,7 @@ model TrainingProgram {
   id            String   @id @default(cuid())
   title         String
   description   String
-  category      String   // ESG Awareness, Safety, Compliance, DEI
+  category      String // ESG Awareness, Safety, Compliance, DEI
   department    String
   trainer       String
   durationHours Float
@@ -103,10 +129,10 @@ model TrainingCompletion {
   @@map("training_completions")
 }
 
-// ─── Governance Module ────────────────────────────────────────────────────────
+// ─── Governance Module ───────────────────────────────────────────────────────
 
 model Policy {
-  id               String                @id
+  id               String                  @id
   title            String
   department       String
   description      String
@@ -145,4 +171,96 @@ model ComplianceIssue {
   department String
   status     String
   audit      Audit  @relation(fields: [auditId], references: [id], onDelete: Cascade)
+}
+
+// ─── Environmental Module ────────────────────────────────────────────────────
+
+enum EmissionFactorStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum CarbonSourceType {
+  PURCHASE
+  MANUFACTURING
+  EXPENSE
+  FLEET
+  MANUAL
+}
+
+enum EnvironmentalGoalStatus {
+  ACTIVE
+  ON_TRACK
+  AT_RISK
+  COMPLETED
+  ARCHIVED
+}
+
+model EmissionFactor {
+  id         String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String
+  category   String
+  unit       String
+  co2PerUnit Decimal              @db.Decimal(12, 4) @map("co2_per_unit")
+  status     EmissionFactorStatus @default(ACTIVE)
+  createdAt  DateTime             @default(now()) @map("created_at")
+  updatedAt  DateTime             @updatedAt @map("updated_at")
+
+  carbonTransactions CarbonTransaction[]
+
+  @@map("emission_factors")
+}
+
+model ProductESGProfile {
+  id              String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productName     String               @map("product_name")
+  productCode     String               @unique @map("product_code")
+  category        String?
+  carbonFootprint Decimal?             @db.Decimal(12, 4) @map("carbon_footprint")
+  sustainableFlag Boolean              @default(false) @map("sustainable_flag")
+  notes           String?
+  status          EmissionFactorStatus @default(ACTIVE)
+  createdAt       DateTime             @default(now()) @map("created_at")
+  updatedAt       DateTime             @updatedAt @map("updated_at")
+
+  @@map("product_esg_profiles")
+}
+
+model CarbonTransaction {
+  id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  departmentId     String           @db.Uuid @map("department_id")
+  emissionFactorId String           @db.Uuid @map("emission_factor_id")
+  sourceType       CarbonSourceType @default(MANUAL) @map("source_type")
+  sourceRef        String?          @map("source_ref")
+  activityAmount   Decimal          @db.Decimal(14, 4) @map("activity_amount")
+  co2Kg            Decimal          @db.Decimal(14, 4) @map("co2_kg")
+  transactionDate  DateTime         @default(now()) @map("transaction_date")
+  autoGenerated    Boolean          @default(false) @map("auto_generated")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  department     Department     @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  emissionFactor EmissionFactor @relation(fields: [emissionFactorId], references: [id], onDelete: Restrict)
+
+  @@index([departmentId])
+  @@index([emissionFactorId])
+  @@index([sourceType, sourceRef])
+  @@map("carbon_transactions")
+}
+
+model EnvironmentalGoal {
+  id           String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String
+  departmentId String                  @db.Uuid @map("department_id")
+  targetCo2Kg  Decimal                 @db.Decimal(14, 4) @map("target_co2_kg")
+  currentCo2Kg Decimal                 @default(0) @db.Decimal(14, 4) @map("current_co2_kg")
+  deadline     DateTime
+  status       EnvironmentalGoalStatus @default(ACTIVE)
+  createdAt    DateTime                @default(now()) @map("created_at")
+  updatedAt    DateTime                @updatedAt @map("updated_at")
+
+  department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+  @@index([departmentId])
+  @@map("environmental_goals")
 }

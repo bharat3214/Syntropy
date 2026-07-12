@@ -27,6 +27,7 @@ export async function GET(req: NextRequest) {
 
 // POST /api/environmental/emission-factors
 export async function POST(req: NextRequest) {
+
   return withErrorHandling(async () => {
     const body = await req.json();
     const parsed = emissionFactorCreateSchema.safeParse(body);

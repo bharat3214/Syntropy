@@ -48,8 +48,18 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     const existing = await prisma.emissionFactor.findUnique({ where: { id } });
     if (!existing) return notFound("Emission factor not found");
 
-    await prisma.emissionFactor.delete({ where: { id } });
+    // Blocked by onDelete: Restrict if transactions reference this factor —
+    // deleting would orphan emissions data. Deactivate instead.
+    const inUse = await prisma.carbonTransaction.count({
+      where: { emissionFactorId: id },
+    });
+    if (inUse > 0) {
+      return badRequest(
+        `Cannot delete "${existing.name}" — ${inUse} carbon transaction${inUse === 1 ? "" : "s"} reference it. Set it to Inactive instead.`
+      );
+    }
 
+    await prisma.emissionFactor.delete({ where: { id } });
     return ok({ id, deleted: true });
   });
 }
