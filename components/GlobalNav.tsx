@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Leaf } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Bell, Leaf } from 'lucide-react';
 
 const NAV_ITEMS = [
   { label: 'Dashboard', href: '/dashboard' },
@@ -16,8 +17,16 @@ const NAV_ITEMS = [
 
 export default function GlobalNav() {
   const pathname = usePathname();
+  const [unreadCount, setUnreadCount] = useState(0);
 
-  // Match on segment root — /gamification/challenges → active for "Gamification"
+  useEffect(() => {
+    const DEMO_EMPLOYEE_ID = 'demo-employee-001';
+    fetch(`/api/gamification/notifications?employeeId=${DEMO_EMPLOYEE_ID}`)
+      .then((r) => r.json())
+      .then((data) => setUnreadCount(data.unreadCount ?? 0))
+      .catch(() => {});
+  }, []);
+
   function isActive(href: string) {
     if (href === '/dashboard') return pathname === href;
     return pathname.startsWith(href);
@@ -50,7 +59,7 @@ export default function GlobalNav() {
         </Link>
 
         {/* Navigation links */}
-        <div className="flex items-center gap-1 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+        <div className="flex items-center gap-1 overflow-x-auto flex-1" style={{ scrollbarWidth: 'none' }}>
           {NAV_ITEMS.map((item) => {
             const active = isActive(item.href);
             return (
@@ -69,6 +78,27 @@ export default function GlobalNav() {
               </Link>
             );
           })}
+        </div>
+
+        {/* Notification bell */}
+        <div className="relative flex-shrink-0">
+          <Link href="/gamification" aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}>
+            <span
+              className="flex items-center justify-center w-8 h-8 rounded-lg transition-colors duration-150"
+              style={{ color: '#9CA3AF' }}
+            >
+              <Bell size={16} />
+            </span>
+          </Link>
+          {unreadCount > 0 && (
+            <span
+              className="absolute -top-0.5 -right-0.5 flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold leading-none"
+              style={{ background: '#22C55E', color: '#0B0F0D' }}
+              aria-hidden="true"
+            >
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
+          )}
         </div>
       </nav>
     </header>

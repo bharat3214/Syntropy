@@ -2,7 +2,7 @@ import { Suspense } from 'react';
 import { prisma } from '@/lib/db';
 import GlobalNav from '@/components/GlobalNav';
 import GamificationSubNav from '@/components/gamification/GamificationSubNav';
-import Leaderboard, { type LeaderboardEntry, type QueryMetrics } from '@/components/gamification/Leaderboard';
+import Leaderboard, { type LeaderboardEntry } from '@/components/gamification/Leaderboard';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {

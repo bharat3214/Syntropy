@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 
@@ -21,6 +21,9 @@ export const metadata: Metadata = {
   },
   description:
     'Measure, manage, and improve ESG performance through real-time insights, automated workflows, and employee engagement.',
+};
+
+export const viewport: Viewport = {
   themeColor: '#0B0F0D',
 };
 

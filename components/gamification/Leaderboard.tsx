@@ -216,6 +216,21 @@ export default function Leaderboard({ entries }: LeaderboardProps) {
               color: '#9CA3AF',
             }}
             aria-label="Export leaderboard as CSV"
+            onClick={async () => {
+              try {
+                const res = await fetch('/api/gamification/leaderboard?format=csv');
+                if (!res.ok) return;
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'syntropy-leaderboard.csv';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+              } catch {}
+            }}
           >
             <Download size={12} />
             Export CSV
