@@ -8,6 +8,7 @@ import {
   useState,
   useTransition,
 } from "react";
+import Link from "next/link";
 
 import PolicySection from "../api/governance/PolicySection";
 import AuditsSection from "../api/governance/AuditsSection";
@@ -237,20 +238,22 @@ export default function GovernancePage() {
       <main className="mx-auto max-w-7xl space-y-8 p-6 md:p-8">
         <header className="space-y-6">
           <div className="flex items-center gap-3">
-            <span className="p-2 bg-[#111815] border border-[#232B27] rounded-xl">
-              <svg className="w-6 h-6 text-[#22C55E]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                <path d="m9 12 2 2 4-4"></path>
-              </svg>
-            </span>
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight text-[#4ADE80]">
-                Governance Dashboard
-              </h1>
-              <p className="text-sm text-[#9CA3AF]">
-                Manage corporate policy tracking, ESG audits, and compliance incidents.
-              </p>
-            </div>
+            <Link href="/" className="flex items-center gap-3 hover:opacity-85 transition-opacity cursor-pointer">
+              <span className="p-2 bg-[#111815] border border-[#232B27] rounded-xl">
+                <svg className="w-6 h-6 text-[#22C55E]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                  <path d="m9 12 2 2 4-4"></path>
+                </svg>
+              </span>
+              <div>
+                <h1 className="text-3xl font-bold tracking-tight text-[#4ADE80]">
+                  Governance Dashboard
+                </h1>
+                <p className="text-sm text-[#9CA3AF]">
+                  Manage corporate policy tracking, ESG audits, and compliance incidents.
+                </p>
+              </div>
+            </Link>
           </div>
 
           {!loading && data && data.analytics && (
