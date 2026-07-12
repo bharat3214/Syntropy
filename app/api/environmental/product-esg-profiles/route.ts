@@ -37,6 +37,21 @@ export async function POST(req: NextRequest) {
       return badRequest("Validation failed", parsed.error.flatten());
     }
 
+    // Product codes are unique. Catch it here so the message lands on the
+    // field itself, rather than letting Prisma throw an opaque P2002.
+    const existing = await prisma.productESGProfile.findUnique({
+      where: { productCode: parsed.data.productCode },
+    });
+    if (existing) {
+      return badRequest("Validation failed", {
+        fieldErrors: {
+          productCode: [
+            `Product code "${parsed.data.productCode}" is already in use.`,
+          ],
+        },
+      });
+    }
+
     const profile = await prisma.productESGProfile.create({
       data: parsed.data,
     });
