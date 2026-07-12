@@ -10,7 +10,7 @@ export async function GET() {
       }),
       prisma.employeeParticipation.findMany({
         orderBy: { registeredDate: "desc" },
-        include: { activity: { select: { title: true } }, department: true },
+        include: { activity: { select: { title: true } }, department: true, employee: true },
       }),
       prisma.diversityMetric.findMany({
         orderBy: [{ departmentId: "asc" }, { category: "asc" }],
@@ -22,7 +22,7 @@ export async function GET() {
       }),
       prisma.trainingCompletion.findMany({
         orderBy: { createdAt: "desc" },
-        include: { training: { select: { title: true } }, department: true },
+        include: { training: { select: { title: true } }, department: true, employee: true },
       }),
     ]);
 
@@ -61,10 +61,18 @@ export async function GET() {
 
     return NextResponse.json({
       activities: activities.map((a) => ({ ...a, department: a.department.name })),
-      participations: participations.map((p) => ({ ...p, department: p.department.name })),
+      participations: participations.map((p) => ({
+        ...p,
+        department: p.department.name,
+        employeeName: `${p.employee?.firstName ?? ""} ${p.employee?.lastName ?? ""}`.trim(),
+      })),
       diversityMetrics: diversityMetrics.map((d) => ({ ...d, department: d.department.name })),
       trainings: trainings.map((t) => ({ ...t, department: t.department.name })),
-      trainingCompletions: trainingCompletions.map((tc) => ({ ...tc, department: tc.department.name })),
+      trainingCompletions: trainingCompletions.map((tc) => ({
+        ...tc,
+        department: tc.department.name,
+        employeeName: `${tc.employee?.firstName ?? ""} ${tc.employee?.lastName ?? ""}`.trim(),
+      })),
       engagement,
     });
   } catch (error) {
