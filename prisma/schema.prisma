@@ -102,3 +102,47 @@ model TrainingCompletion {
   @@unique([trainingId, employeeId])
   @@map("training_completions")
 }
+
+// ─── Governance Module ────────────────────────────────────────────────────────
+
+model Policy {
+  id               String                @id
+  title            String
+  department       String
+  description      String
+  status           String
+  version          String
+  effectiveDate    String
+  acknowledgements PolicyAcknowledgement[]
+}
+
+model PolicyAcknowledgement {
+  id           String  @id
+  policyId     String
+  employeeName String
+  department   String
+  status       String
+  dateSigned   String?
+  policy       Policy  @relation(fields: [policyId], references: [id], onDelete: Cascade)
+}
+
+model Audit {
+  id               String            @id
+  title            String
+  department       String
+  auditor          String
+  date             String
+  findings         String
+  status           String
+  complianceIssues ComplianceIssue[]
+}
+
+model ComplianceIssue {
+  id         String @id
+  auditId    String
+  issue      String
+  severity   String
+  department String
+  status     String
+  audit      Audit  @relation(fields: [auditId], references: [id], onDelete: Cascade)
+}
