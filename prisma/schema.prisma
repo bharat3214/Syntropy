@@ -1,103 +1,142 @@
-datasource db {
-  provider = "postgresql"
-}
+// ============================================================================
+// ENVIRONMENTAL MODULE — standalone schema
+// ============================================================================
+//
+// MERGE CONTRACT — the one thing that must stay identical across all modules:
+//   model Department {
+//     id   String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+//     name String @unique
+//     ...
+//   }
+//   Every module FKs to Department.id as `String @db.Uuid`.
+//   If everyone holds this shape, the merge is mechanical.
+// ============================================================================
 
 generator client {
   provider = "prisma-client-js"
 }
 
+datasource db {
+  provider = "postgresql"
+}
+
+// ----------------------------------------------------------------------------
+// SHARED MASTER DATA
+// Defined here so Environmental can run standalone. At merge time this model
+// is owned by whoever takes Settings — my copy gets deleted, not theirs.
+// The FK shape is what matters, not who declares it.
+// ----------------------------------------------------------------------------
+
 model Department {
-  id        String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name      String     @unique
-  createdAt DateTime   @default(now()) @map("created_at")
-  employees Employee[]
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String   @unique
+  code      String?  @unique
+  createdAt DateTime @default(now()) @map("created_at")
+
+  carbonTransactions CarbonTransaction[]
+  environmentalGoals EnvironmentalGoal[]
 
   @@map("departments")
 }
 
-model Employee {
-  id                     String                   @id
-  email                  String                   @unique
-  firstName              String?                  @map("first_name")
-  lastName               String?                  @map("last_name")
-  departmentId           String?                  @db.Uuid @map("department_id")
-  isActive               Boolean                  @default(true) @map("is_active")
-  createdAt              DateTime                 @default(now()) @map("created_at")
-  department             Department?              @relation(fields: [departmentId], references: [id], onDelete: SetNull)
-  participations         ChallengeParticipation[]
-  xpLedger               XpLedger[]
-  employeeBadges         EmployeeBadge[]
+// ----------------------------------------------------------------------------
+// ENVIRONMENTAL — enums
+// ----------------------------------------------------------------------------
 
-  @@map("employees")
+enum EmissionFactorStatus {
+  ACTIVE
+  INACTIVE
 }
 
-model Challenge {
-  id               String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  title            String
-  description      String
-  xpReward         Int                      @map("xp_reward")
-  status           String                   @default("DRAFT")
-  evidenceRequired Boolean                  @default(false) @map("evidence_required")
-  startDate        DateTime                 @map("start_date")
-  endDate          DateTime                 @map("end_date")
-  createdAt        DateTime                 @default(now()) @map("created_at")
-  participations   ChallengeParticipation[]
-
-  @@map("challenges")
+enum CarbonSourceType {
+  PURCHASE
+  MANUFACTURING
+  EXPENSE
+  FLEET
+  MANUAL
 }
 
-model ChallengeParticipation {
-  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  employeeId  String    @map("employee_id")
-  challengeId String    @db.Uuid @map("challenge_id")
-  status      String    @default("PENDING")
-  proofUrl    String?   @map("proof_url")
-  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at")
-  employee    Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
-
-  @@unique([employeeId, challengeId], map: "unique_employee_challenge")
-  @@map("challenge_participations")
+enum EnvironmentalGoalStatus {
+  ACTIVE
+  ON_TRACK
+  AT_RISK
+  COMPLETED
+  ARCHIVED
 }
 
-model XpLedger {
-  id         BigInt   @id @default(autoincrement())
-  employeeId String   @map("employee_id")
-  amount     Int
-  reason     String
-  createdAt  DateTime @default(now()) @map("created_at")
-  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+// ----------------------------------------------------------------------------
+// ENVIRONMENTAL — master data
+// ----------------------------------------------------------------------------
 
-  @@map("xp_ledger")
+model EmissionFactor {
+  id         String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String
+  category   String
+  unit       String
+  co2PerUnit Decimal              @db.Decimal(12, 4) @map("co2_per_unit")
+  status     EmissionFactorStatus @default(ACTIVE)
+  createdAt  DateTime             @default(now()) @map("created_at")
+  updatedAt  DateTime             @updatedAt @map("updated_at")
+
+  carbonTransactions CarbonTransaction[]
+
+  @@map("emission_factors")
 }
 
-model Badge {
-  id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name           String
-  iconUrl        String          @map("icon_url")
-  unlockRule     Json            @map("unlock_rule")
-  employeeBadges EmployeeBadge[]
+model ProductESGProfile {
+  id              String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productName     String               @map("product_name")
+  productCode     String               @unique @map("product_code")
+  category        String?
+  carbonFootprint Decimal?             @db.Decimal(12, 4) @map("carbon_footprint")
+  sustainableFlag Boolean              @default(false) @map("sustainable_flag")
+  notes           String?
+  status          EmissionFactorStatus @default(ACTIVE)
+  createdAt       DateTime             @default(now()) @map("created_at")
+  updatedAt       DateTime             @updatedAt @map("updated_at")
 
-  @@map("badges")
+  @@map("product_esg_profiles")
 }
 
-model EmployeeBadge {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  employeeId String   @map("employee_id")
-  badgeId    String   @db.Uuid @map("badge_id")
-  awardedAt  DateTime @default(now()) @map("awarded_at")
-  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  badge      Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+// ----------------------------------------------------------------------------
+// ENVIRONMENTAL — transactional data
+// ----------------------------------------------------------------------------
 
-  @@map("employee_badges")
+model CarbonTransaction {
+  id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  departmentId     String           @db.Uuid @map("department_id")
+  emissionFactorId String           @db.Uuid @map("emission_factor_id")
+  sourceType       CarbonSourceType @default(MANUAL) @map("source_type")
+  sourceRef        String?          @map("source_ref")
+  activityAmount   Decimal          @db.Decimal(14, 4) @map("activity_amount")
+  co2Kg            Decimal          @db.Decimal(14, 4) @map("co2_kg")
+  transactionDate  DateTime         @default(now()) @map("transaction_date")
+  autoGenerated    Boolean          @default(false) @map("auto_generated")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  department     Department     @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  emissionFactor EmissionFactor @relation(fields: [emissionFactorId], references: [id], onDelete: Restrict)
+
+  @@index([departmentId])
+  @@index([emissionFactorId])
+  @@index([sourceType, sourceRef])
+  @@map("carbon_transactions")
 }
 
-model Reward {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  itemName  String   @map("item_name")
-  pointCost Int      @map("point_cost")
-  stockCount Int     @map("stock_count")
-  createdAt DateTime @default(now()) @map("created_at")
+model EnvironmentalGoal {
+  id           String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String
+  departmentId String                  @db.Uuid @map("department_id")
+  targetCo2Kg  Decimal                 @db.Decimal(14, 4) @map("target_co2_kg")
+  currentCo2Kg Decimal                 @default(0) @db.Decimal(14, 4) @map("current_co2_kg")
+  deadline     DateTime
+  status       EnvironmentalGoalStatus @default(ACTIVE)
+  createdAt    DateTime                @default(now()) @map("created_at")
+  updatedAt    DateTime                @updatedAt @map("updated_at")
 
-  @@map("rewards")
+  department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+  @@index([departmentId])
+  @@map("environmental_goals")
 }
