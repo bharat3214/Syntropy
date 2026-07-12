@@ -77,7 +77,7 @@ function RewardCard({ reward, userXp }: { reward: RewardItem; userXp: number }) 
       )}
 
       {/* Cost */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <span
           className="text-base font-bold"
           style={{ color: canAfford ? '#F59E0B' : '#EF4444' }}
@@ -168,7 +168,10 @@ export default function RewardsCatalogue({ rewards, userXp }: RewardsCataloguePr
       </div>
 
       {/* Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div 
+        className="grid gap-4" 
+        style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))' }}
+      >
         {rewards.map((reward) => (
           <RewardCard key={reward.id} reward={reward} userXp={userXp} />
         ))}
