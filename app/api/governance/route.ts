@@ -92,12 +92,47 @@ export async function GET() {
     });
   }
 
-  return NextResponse.json({
-    policies: Array.from(policiesMap.values()),
-    acknowledgements: Array.from(acknowledgementsMap.values()),
-    audits: optimizedAudits,
-    complianceIssues: Array.from(complianceMap.values()),
-  }, { status: 200 });
+  const totalIssues = complianceMap.size;
+  const resolvedIssues = Array.from(complianceMap.values()).filter(
+    (c) => c.status === "Resolved"
+  ).length;
+  const complianceScore = totalIssues > 0 ? (resolvedIssues / totalIssues) * 100 : 100;
+
+  const totalOpenIssues = Array.from(complianceMap.values()).filter(
+    (c) => c.status === "Open" || c.status === "In Progress"
+  ).length;
+
+  const departments = new Set<string>();
+  for (const p of policiesMap.values()) departments.add(p.department);
+  for (const a of acknowledgementsMap.values()) departments.add(a.department);
+  for (const au of auditsMap.values()) departments.add(au.department);
+  for (const c of complianceMap.values()) departments.add(c.department);
+
+  const departmentLeaderboard = Array.from(departments)
+    .map((dept) => {
+      const unresolvedCount = Array.from(complianceMap.values()).filter(
+        (c) =>
+          c.department === dept &&
+          (c.status === "Open" || c.status === "In Progress")
+      ).length;
+      return { department: dept, unresolvedCount };
+    })
+    .sort((a, b) => a.unresolvedCount - b.unresolvedCount);
+
+  return NextResponse.json(
+    {
+      policies: Array.from(policiesMap.values()),
+      acknowledgements: Array.from(acknowledgementsMap.values()),
+      audits: optimizedAudits,
+      complianceIssues: Array.from(complianceMap.values()),
+      analytics: {
+        complianceScore,
+        totalOpenIssues,
+        departmentLeaderboard,
+      },
+    },
+    { status: 200 }
+  );
 }
 
 export async function POST(req: NextRequest) {

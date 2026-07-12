@@ -13,7 +13,6 @@ import PolicySection from "../api/governance/PolicySection";
 import AuditsSection from "../api/governance/AuditsSection";
 import ComplianceSection from "../api/governance/ComplianceSection";
 
-
 type PolicyStatus = "Active" | "Draft";
 type AcknowledgementStatus = "Acknowledged" | "Pending";
 type AuditStatus = "Completed" | "Under Review" | "Scheduled";
@@ -73,6 +72,14 @@ interface GovernanceResponse {
   acknowledgements: PolicyAcknowledgement[];
   audits: AuditWithIssues[];
   complianceIssues: ComplianceIssue[];
+  analytics?: {
+    complianceScore: number;
+    totalOpenIssues: number;
+    departmentLeaderboard: {
+      department: string;
+      unresolvedCount: number;
+    }[];
+  };
 }
 
 interface CreateAuditForm {
@@ -245,6 +252,107 @@ export default function GovernancePage() {
               </p>
             </div>
           </div>
+
+          {!loading && data && data.analytics && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+              <div className="bg-[#111815] border border-[#232B27] rounded-2xl p-6 shadow-lg shadow-black/40 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">
+                      ESG Compliance Score
+                    </p>
+                    <span className="p-2 bg-[#0F1512] border border-[#232B27] rounded-xl">
+                      <svg className="w-5 h-5 text-[#22C55E]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        <polyline points="9 11 11 13 15 9"></polyline>
+                      </svg>
+                    </span>
+                  </div>
+                  <div className="mt-4 flex items-baseline gap-2">
+                    <span className="text-4xl font-extrabold tracking-tight text-[#4ADE80]">
+                      {data.analytics.complianceScore.toFixed(1)}%
+                    </span>
+                    <span className="text-xs text-[#9CA3AF]">safety rating</span>
+                  </div>
+                </div>
+                <div className="mt-6 space-y-2">
+                  <div className="w-full bg-[#0F1512] rounded-full h-2 border border-[#232B27] overflow-hidden">
+                    <div
+                      className="bg-[#22C55E] h-1.5 rounded-full transition-all duration-500"
+                      style={{ width: `${data.analytics.complianceScore}%` }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] text-[#9CA3AF]">
+                    <span>0%</span>
+                    <span>100%</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-[#111815] border border-[#232B27] rounded-2xl p-6 shadow-lg shadow-black/40 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">
+                      Outstanding Hazards
+                    </p>
+                    <span className="p-2 bg-[#0F1512] border border-[#232B27] rounded-xl">
+                      <svg className="w-5 h-5 text-[#EF4444]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                      </svg>
+                    </span>
+                  </div>
+                  <div className="mt-4 flex items-baseline gap-2">
+                    <span className="text-4xl font-extrabold tracking-tight text-[#EF4444]">
+                      {data.analytics.totalOpenIssues}
+                    </span>
+                    <span className="text-xs text-[#9CA3AF]">active incidents</span>
+                  </div>
+                </div>
+                <div className="mt-6 text-xs text-[#9CA3AF]">
+                  Requires resolution and safety review.
+                </div>
+              </div>
+
+              <div className="bg-[#111815] border border-[#232B27] rounded-2xl p-6 shadow-lg shadow-black/40 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">
+                      Sustainability Leaderboard
+                    </p>
+                    <span className="p-2 bg-[#0F1512] border border-[#232B27] rounded-xl">
+                      <svg className="w-5 h-5 text-[#F59E0B]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                        <circle cx="12" cy="8" r="7"></circle>
+                        <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
+                      </svg>
+                    </span>
+                  </div>
+                  <div className="space-y-3">
+                    {data.analytics.departmentLeaderboard.map((item, index) => (
+                      <div key={item.department} className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2">
+                          <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
+                            index === 0 ? "bg-[#22C55E]/20 text-[#22C55E] border border-[#22C55E]/30" : "bg-[#0F1512] text-[#9CA3AF] border border-[#232B27]"
+                          }`}>
+                            {index + 1}
+                          </span>
+                          <span className="font-medium text-[#F3F4F1]">{item.department}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${
+                            item.unresolvedCount === 0 ? "bg-[#22C55E]/10 text-[#22C55E] border-[#22C55E]/20" : "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/20"
+                          }`}>
+                            {item.unresolvedCount} {item.unresolvedCount === 1 ? "hazard" : "hazards"}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           <nav className="flex flex-wrap gap-2 border-b border-[#232B27] pb-4">
             {tabs.map((tab) => (
