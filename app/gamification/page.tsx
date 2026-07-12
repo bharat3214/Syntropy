@@ -3,14 +3,14 @@ import { prisma } from '@/lib/db';
 
 import GlobalNav from '@/components/GlobalNav';
 import GamificationSubNav from '@/components/gamification/GamificationSubNav';
-import Leaderboard, { type LeaderboardEntry, type QueryMetrics } from '@/components/gamification/Leaderboard';
+import Leaderboard, { type LeaderboardEntry } from '@/components/gamification/Leaderboard';
 import ChallengeGrid, { ChallengeGridSkeleton, type Challenge } from '@/components/gamification/ChallengeGrid';
 import BadgeGallery, { type BadgeData } from '@/components/gamification/BadgeGallery';
 import RewardsCatalogue, { type RewardItem } from '@/components/gamification/RewardsCatalogue';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Gamification – Syntropy',
+  title: 'Gamification',
   description:
     'Employee sustainability challenges, XP leaderboard, badge collection, and rewards catalogue.',
 };
@@ -36,7 +36,6 @@ function safeNum(v: bigint | number | null | undefined): number {
 
 async function fetchLeaderboardData(): Promise<{
   entries: LeaderboardEntry[];
-  metrics: QueryMetrics;
 }> {
   const start = performance.now();
 
@@ -98,7 +97,6 @@ async function fetchLeaderboardData(): Promise<{
 
   return {
     entries,
-    metrics: { mode: 'batched', durationMs, queryCount: 4 },
   };
 }
 
@@ -233,8 +231,8 @@ function RewardsSkeleton() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function LeaderboardSection() {
-  const { entries, metrics } = await fetchLeaderboardData();
-  return <Leaderboard entries={entries} metrics={metrics} />;
+  const { entries } = await fetchLeaderboardData();
+  return <Leaderboard entries={entries} />;
 }
 
 async function ChallengesSection() {
@@ -305,15 +303,18 @@ async function StatsSummary() {
       {stats.map((s) => (
         <div
           key={s.label}
-          className="rounded-xl px-4 py-3"
-          style={{ background: '#111815', border: '1px solid #232B27' }}
+          className="bg-[#111815] border border-[#232B27] rounded-2xl p-6 shadow-lg shadow-black/40 flex flex-col justify-between"
         >
-          <p className="text-xs" style={{ color: '#9CA3AF' }}>
-            {s.label}
-          </p>
-          <p className="text-2xl font-bold mt-0.5" style={{ color: '#4ADE80' }}>
-            {s.value}
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider">
+              {s.label}
+            </p>
+          </div>
+          <div className="mt-4 flex items-baseline gap-2">
+            <span className="text-4xl font-extrabold tracking-tight text-[#4ADE80]">
+              {s.value}
+            </span>
+          </div>
         </div>
       ))}
     </div>
@@ -332,22 +333,27 @@ export default function GamificationPage() {
 
       <main
         id="gamification-main"
-        className="mx-auto w-full max-w-[1280px] px-4 sm:px-6 py-8 flex flex-col gap-8"
+        className="mx-auto max-w-7xl space-y-8 p-6 md:p-8"
         style={{ background: '#0B0F0D', minHeight: 'calc(100vh - 112px)' }}
       >
-        {/* Page title */}
-        <section aria-labelledby="gamification-title">
-          <h1
-            id="gamification-title"
-            className="text-2xl font-bold"
-            style={{ color: '#4ADE80' }}
-          >
-            Gamification
-          </h1>
-          <p className="text-sm mt-1" style={{ color: '#9CA3AF' }}>
-            Track challenges, earn XP, collect badges, and redeem rewards.
-          </p>
-        </section>
+        <header className="space-y-6">
+          <div className="flex items-center gap-3">
+            <span className="p-2 bg-[#111815] border border-[#232B27] rounded-xl">
+              <svg className="w-6 h-6 text-[#22C55E]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+              </svg>
+            </span>
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight text-[#4ADE80]">
+                Gamification Dashboard
+              </h1>
+              <p className="text-sm text-[#9CA3AF]">
+                Track challenges, earn XP, collect badges, and redeem rewards.
+              </p>
+            </div>
+          </div>
+        </header>
 
         {/* Stats bar */}
         <Suspense

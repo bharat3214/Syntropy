@@ -47,12 +47,7 @@ function RewardCard({ reward, userXp }: { reward: RewardItem; userXp: number }) 
   return (
     <article
       id={`reward-card-${reward.id}`}
-      className="flex flex-col gap-3 rounded-2xl p-5 transition-all duration-150 ease-out hover:-translate-y-1"
-      style={{
-        background: '#111815',
-        border: `1px solid ${redeemed ? 'rgba(34,197,94,0.3)' : '#232B27'}`,
-        opacity: !inStock ? 0.7 : 1,
-      }}
+      className={`flex flex-col gap-3 bg-[#111815] border rounded-2xl p-6 shadow-lg shadow-black/40 transition-all duration-150 ease-out hover:-translate-y-1 ${redeemed ? 'border-[#22C55E]/30' : 'border-[#232B27]'} ${!inStock ? 'opacity-70' : ''}`}
       aria-label={`Reward: ${reward.itemName}`}
     >
       {/* Icon row */}
@@ -148,7 +143,7 @@ function RewardCard({ reward, userXp }: { reward: RewardItem; userXp: number }) 
 
 export default function RewardsCatalogue({ rewards, userXp }: RewardsCatalogueProps) {
   return (
-    <section id="rewards-section" className="flex flex-col gap-4">
+    <section id="rewards-section" className="bg-[#111815] border border-[#232B27] rounded-2xl p-6 shadow-lg shadow-black/40 flex flex-col gap-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h2 className="text-base font-semibold" style={{ color: '#4ADE80' }}>

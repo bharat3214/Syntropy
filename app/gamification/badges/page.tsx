@@ -6,8 +6,8 @@ import BadgeGallery, { type BadgeData } from '@/components/gamification/BadgeGal
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Badges – Syntropy',
-  description: 'Earned ESG badges and achievement rule configurations.',
+  title: 'Badges',
+  description: 'Employee ESG achievements and milestone badges.',
 };
 
 const DEMO_EMPLOYEE_ID = 'demo-employee-001';
@@ -48,17 +48,27 @@ export default function BadgesPage() {
       <GlobalNav />
       <GamificationSubNav />
       <main
-        className="mx-auto w-full max-w-[1280px] px-4 sm:px-6 py-8 flex flex-col gap-6"
+        className="mx-auto max-w-7xl space-y-8 p-6 md:p-8"
         style={{ background: '#0B0F0D', minHeight: 'calc(100vh - 112px)' }}
       >
-        <section aria-labelledby="badges-title">
-          <h1 id="badges-title" className="text-xl font-bold" style={{ color: '#4ADE80' }}>
-            Badge Gallery
-          </h1>
-          <p className="text-sm mt-1" style={{ color: '#9CA3AF' }}>
-            Earn achievements by completing sustainability challenges and contributing to ESG targets.
-          </p>
-        </section>
+        <header className="space-y-6">
+          <div className="flex items-center gap-3">
+            <span className="p-2 bg-[#111815] border border-[#232B27] rounded-xl">
+              <svg className="w-6 h-6 text-[#22C55E]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                <circle cx="12" cy="10" r="3"></circle>
+              </svg>
+            </span>
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight text-[#4ADE80]">
+                Badges
+              </h1>
+              <p className="text-sm text-[#9CA3AF]">
+                Earn achievements for your sustainability efforts.
+              </p>
+            </div>
+          </div>
+        </header>
 
         <Suspense
           fallback={

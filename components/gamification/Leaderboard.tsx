@@ -6,9 +6,6 @@ import {
   Search,
   ChevronUp,
   ChevronDown,
-  Zap,
-  AlertTriangle,
-  CheckCircle2,
   Download,
   Users,
 } from 'lucide-react';
@@ -27,15 +24,10 @@ export interface LeaderboardEntry {
   badgeCount: number;
 }
 
-export interface QueryMetrics {
-  mode: 'n1' | 'batched';
-  durationMs: number;
-  queryCount: number;
-}
+
 
 interface LeaderboardProps {
   entries: LeaderboardEntry[];
-  metrics: QueryMetrics;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -139,96 +131,7 @@ function Avatar({ name, rank }: { name: string; rank: number }) {
 // Query Metrics Widget
 // ─────────────────────────────────────────────────────────────────────────────
 
-function QueryMetricsWidget({
-  metrics,
-  mode,
-  onToggle,
-}: {
-  metrics: QueryMetrics;
-  mode: 'n1' | 'batched';
-  onToggle: () => void;
-}) {
-  const isN1 = mode === 'n1';
 
-  return (
-    <div
-      className="flex flex-col gap-3 rounded-xl p-4"
-      style={{ background: '#0F1512', border: '1px solid #232B27' }}
-    >
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Zap
-            size={14}
-            style={{ color: isN1 ? '#EF4444' : '#22C55E' }}
-            aria-hidden="true"
-          />
-          <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#9CA3AF' }}>
-            Query Mode
-          </span>
-        </div>
-        {/* Toggle */}
-        <button
-          id="query-mode-toggle"
-          onClick={onToggle}
-          className="relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer items-center rounded-full transition-colors duration-150 ease-out focus:outline-none"
-          style={{
-            background: isN1 ? '#EF444420' : '#22C55E30',
-            border: `1px solid ${isN1 ? '#EF4444' : '#22C55E'}`,
-          }}
-          aria-label="Toggle query mode"
-          role="switch"
-          aria-checked={!isN1}
-        >
-          <span
-            className="inline-block h-3.5 w-3.5 rounded-full transition-transform duration-150 ease-out"
-            style={{
-              background: isN1 ? '#EF4444' : '#22C55E',
-              transform: isN1 ? 'translateX(2px)' : 'translateX(18px)',
-            }}
-          />
-        </button>
-      </div>
-
-      {/* Status label */}
-      <div
-        className="flex items-center gap-2 rounded-lg px-3 py-2"
-        style={{
-          background: isN1 ? 'rgba(239,68,68,0.08)' : 'rgba(34,197,94,0.08)',
-          border: `1px solid ${isN1 ? 'rgba(239,68,68,0.25)' : 'rgba(34,197,94,0.25)'}`,
-        }}
-      >
-        {isN1 ? (
-          <AlertTriangle size={13} style={{ color: '#EF4444' }} aria-hidden="true" />
-        ) : (
-          <CheckCircle2 size={13} style={{ color: '#22C55E' }} aria-hidden="true" />
-        )}
-        <span
-          className="text-xs font-semibold tracking-wide"
-          style={{ color: isN1 ? '#EF4444' : '#22C55E' }}
-        >
-          {isN1 ? 'UNOPTIMIZED N+1 QUERY' : 'BATCHED & INDEXED READ'}
-        </span>
-      </div>
-
-      {/* Metrics grid */}
-      <div className="grid grid-cols-2 gap-2">
-        <div className="rounded-lg p-2" style={{ background: '#111815' }}>
-          <p className="text-xs" style={{ color: '#9CA3AF' }}>Duration</p>
-          <p className="text-sm font-bold" style={{ color: '#F3F4F1' }}>
-            {metrics.durationMs.toFixed(1)}
-            <span className="text-xs font-normal ml-1" style={{ color: '#9CA3AF' }}>ms</span>
-          </p>
-        </div>
-        <div className="rounded-lg p-2" style={{ background: '#111815' }}>
-          <p className="text-xs" style={{ color: '#9CA3AF' }}>Queries</p>
-          <p className="text-sm font-bold" style={{ color: '#F3F4F1' }}>
-            {metrics.queryCount}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Leaderboard Table
@@ -237,20 +140,13 @@ function QueryMetricsWidget({
 type SortKey = 'rank' | 'xpTotal' | 'challengesCompleted' | 'badgeCount';
 type SortDir = 'asc' | 'desc';
 
-export default function Leaderboard({ entries, metrics }: LeaderboardProps) {
+export default function Leaderboard({ entries }: LeaderboardProps) {
   const [search, setSearch] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('rank');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
-  const [queryMode, setQueryMode] = useState<'n1' | 'batched'>(metrics.mode);
   const [deptFilter, setDeptFilter] = useState('ALL');
 
   const departments = ['ALL', ...Array.from(new Set(entries.map((e) => e.department))).sort()];
-
-  const simulatedMetrics: QueryMetrics = {
-    mode: queryMode,
-    durationMs: queryMode === 'n1' ? metrics.durationMs * 8.4 : metrics.durationMs,
-    queryCount: queryMode === 'n1' ? entries.length + 1 : 2,
-  };
 
   const filtered = entries
     .filter((e) => {
@@ -287,8 +183,7 @@ export default function Leaderboard({ entries, metrics }: LeaderboardProps) {
   return (
     <section
       id="leaderboard-section"
-      className="rounded-2xl overflow-hidden"
-      style={{ background: '#111815', border: '1px solid #232B27' }}
+      className="bg-[#111815] border border-[#232B27] rounded-2xl overflow-hidden shadow-lg shadow-black/40"
     >
       {/* Header bar */}
       <div
@@ -502,17 +397,7 @@ export default function Leaderboard({ entries, metrics }: LeaderboardProps) {
           </table>
         </div>
 
-        {/* Sidebar metrics widget */}
-        <div
-          className="w-full lg:w-52 flex-shrink-0 p-4"
-          style={{ borderLeft: '1px solid #232B27', borderTop: '1px solid #232B27' }}
-        >
-          <QueryMetricsWidget
-            metrics={simulatedMetrics}
-            mode={queryMode}
-            onToggle={() => setQueryMode((m) => (m === 'n1' ? 'batched' : 'n1'))}
-          />
-        </div>
+
       </div>
 
       {/* Footer count */}

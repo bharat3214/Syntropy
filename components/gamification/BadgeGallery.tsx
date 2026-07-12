@@ -109,11 +109,8 @@ function BadgeCard({ badge }: { badge: BadgeData }) {
   return (
     <div
       id={`badge-card-${badge.id}`}
-      className="relative flex flex-col items-center gap-3 rounded-2xl p-5 flex-shrink-0 transition-all duration-150 ease-out hover:-translate-y-1"
+      className={`relative flex flex-col items-center gap-3 bg-[#111815] border rounded-2xl p-5 flex-shrink-0 shadow-lg shadow-black/40 transition-all duration-150 ease-out hover:-translate-y-1 ${earned ? 'border-[#22C55E]/25' : 'border-[#232B27]'}`}
       style={{
-        background: '#111815',
-        border: `1px solid ${earned ? 'rgba(34,197,94,0.25)' : '#232B27'}`,
-        boxShadow: earned ? '0 0 16px rgba(34,197,94,0.08)' : 'none',
         width: '140px',
         minWidth: '140px',
       }}
@@ -189,7 +186,7 @@ export default function BadgeGallery({ badges }: BadgeGalleryProps) {
   const locked = badges.filter((b) => !b.awardedAt);
 
   return (
-    <section id="badge-gallery-section" className="flex flex-col gap-4">
+    <section id="badge-gallery-section" className="bg-[#111815] border border-[#232B27] rounded-2xl p-6 shadow-lg shadow-black/40 flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-base font-semibold" style={{ color: '#4ADE80' }}>

@@ -6,8 +6,8 @@ import RewardsCatalogue, { type RewardItem } from '@/components/gamification/Rew
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Rewards – Syntropy',
-  description: 'Redeem ESG points for company incentives and rewards.',
+  title: 'Rewards',
+  description: 'Redeem ESG points for company perks and sustainability rewards.',
 };
 
 const DEMO_EMPLOYEE_ID = 'demo-employee-001';
@@ -56,17 +56,27 @@ export default function RewardsPage() {
       <GlobalNav />
       <GamificationSubNav />
       <main
-        className="mx-auto w-full max-w-[1280px] px-4 sm:px-6 py-8 flex flex-col gap-6"
+        className="mx-auto max-w-7xl space-y-8 p-6 md:p-8"
         style={{ background: '#0B0F0D', minHeight: 'calc(100vh - 112px)' }}
       >
-        <section aria-labelledby="rewards-title">
-          <h1 id="rewards-title" className="text-xl font-bold" style={{ color: '#4ADE80' }}>
-            Rewards Catalog
-          </h1>
-          <p className="text-sm mt-1" style={{ color: '#9CA3AF' }}>
-            Redeem accumulated XP for items, experiences, and carbon offsets.
-          </p>
-        </section>
+        <header className="space-y-6">
+          <div className="flex items-center gap-3">
+            <span className="p-2 bg-[#111815] border border-[#232B27] rounded-xl">
+              <svg className="w-6 h-6 text-[#22C55E]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+              </svg>
+            </span>
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight text-[#4ADE80]">
+                Rewards Catalogue
+              </h1>
+              <p className="text-sm text-[#9CA3AF]">
+                Redeem points for real-world incentives.
+              </p>
+            </div>
+          </div>
+        </header>
 
         <Suspense
           fallback={

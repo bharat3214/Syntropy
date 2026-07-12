@@ -221,12 +221,7 @@ function ChallengeCard({ challenge }: { challenge: Challenge }) {
   return (
     <article
       id={`challenge-card-${challenge.id}`}
-      className="flex flex-col gap-4 rounded-2xl p-5 transition-all duration-150 ease-out hover:-translate-y-1"
-      style={{
-        background: '#111815',
-        border: '1px solid #232B27',
-        boxShadow: isActive ? '0 0 0 1px rgba(34,197,94,0.12)' : 'none',
-      }}
+      className={`flex flex-col gap-4 bg-[#111815] border border-[#232B27] rounded-2xl p-6 shadow-lg shadow-black/40 transition-all duration-150 ease-out hover:-translate-y-1 ${isActive ? 'ring-1 ring-[#22C55E]/20' : ''}`}
       aria-label={`Challenge: ${challenge.title}`}
     >
       {/* Card header */}
@@ -402,20 +397,11 @@ export default function ChallengeGrid({ challenges }: ChallengeGridProps) {
               role="tab"
               aria-selected={isActive}
               onClick={() => setActiveFilter(f.value)}
-              className="flex items-center gap-2 rounded-xl px-3.5 py-1.5 text-xs font-medium transition-all duration-150 ease-out"
-              style={
+              className={`rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-150 flex items-center gap-2 ${
                 isActive
-                  ? {
-                      background: 'rgba(34,197,94,0.12)',
-                      border: '1px solid #22C55E',
-                      color: '#22C55E',
-                    }
-                  : {
-                      background: '#111815',
-                      border: '1px solid #232B27',
-                      color: '#9CA3AF',
-                    }
-              }
+                  ? 'bg-[#111815] border border-[#22C55E] text-[#22C55E] shadow-sm shadow-[#22C55E]/10'
+                  : 'bg-transparent border border-[#232B27] text-[#9CA3AF] hover:text-[#F3F4F1] hover:border-[#9CA3AF]/30'
+              }`}
             >
               {f.label}
               {count > 0 && (

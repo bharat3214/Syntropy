@@ -6,8 +6,8 @@ import ChallengeGrid, { ChallengeGridSkeleton, type Challenge } from '@/componen
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Challenges – Syntropy',
-  description: 'Active sustainability challenges and participation status.',
+  title: 'Challenges',
+  description: 'Active departmental and individual ESG challenges.',
 };
 
 async function fetchChallenges(): Promise<Challenge[]> {
@@ -40,17 +40,27 @@ export default function ChallengesPage() {
       <GlobalNav />
       <GamificationSubNav />
       <main
-        className="mx-auto w-full max-w-[1280px] px-4 sm:px-6 py-8 flex flex-col gap-6"
+        className="mx-auto max-w-7xl space-y-8 p-6 md:p-8"
         style={{ background: '#0B0F0D', minHeight: 'calc(100vh - 112px)' }}
       >
-        <section aria-labelledby="challenges-title">
-          <h1 id="challenges-title" className="text-xl font-bold" style={{ color: '#4ADE80' }}>
-            Challenge Participation
-          </h1>
-          <p className="text-sm mt-1" style={{ color: '#9CA3AF' }}>
-            Browse ongoing sustainability sprints, track completion, and upload evidence.
-          </p>
-        </section>
+        <header className="space-y-6">
+          <div className="flex items-center gap-3">
+            <span className="p-2 bg-[#111815] border border-[#232B27] rounded-xl">
+              <svg className="w-6 h-6 text-[#22C55E]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              </svg>
+            </span>
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight text-[#4ADE80]">
+                Active Challenges
+              </h1>
+              <p className="text-sm text-[#9CA3AF]">
+                Participate in company-wide ESG challenges to earn XP.
+              </p>
+            </div>
+          </div>
+        </header>
 
         <Suspense fallback={<ChallengeGridSkeleton />}>
           <ChallengesContent />

@@ -6,7 +6,7 @@ import Leaderboard, { type LeaderboardEntry, type QueryMetrics } from '@/compone
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Leaderboard – Syntropy',
+  title: 'Leaderboard',
   description: 'Live department and employee sustainability rankings.',
 };
 
@@ -18,7 +18,6 @@ function safeNum(v: bigint | number | null | undefined): number {
 
 async function fetchLeaderboardData(): Promise<{
   entries: LeaderboardEntry[];
-  metrics: QueryMetrics;
 }> {
   const start = performance.now();
   const xpTotals = await prisma.xpLedger.groupBy({
@@ -74,13 +73,12 @@ async function fetchLeaderboardData(): Promise<{
 
   return {
     entries,
-    metrics: { mode: 'batched', durationMs, queryCount: 4 },
   };
 }
 
 async function LeaderboardContent() {
-  const { entries, metrics } = await fetchLeaderboardData();
-  return <Leaderboard entries={entries} metrics={metrics} />;
+  const { entries } = await fetchLeaderboardData();
+  return <Leaderboard entries={entries} />;
 }
 
 export default function LeaderboardPage() {
@@ -89,17 +87,26 @@ export default function LeaderboardPage() {
       <GlobalNav />
       <GamificationSubNav />
       <main
-        className="mx-auto w-full max-w-[1280px] px-4 sm:px-6 py-8 flex flex-col gap-6"
+        className="mx-auto max-w-7xl space-y-8 p-6 md:p-8"
         style={{ background: '#0B0F0D', minHeight: 'calc(100vh - 112px)' }}
       >
-        <section aria-labelledby="leaderboard-title">
-          <h1 id="leaderboard-title" className="text-xl font-bold" style={{ color: '#4ADE80' }}>
-            Ecosphere Leaderboard
-          </h1>
-          <p className="text-sm mt-1" style={{ color: '#9CA3AF' }}>
-            Real-time standings based on accumulated ESG gamification points.
-          </p>
-        </section>
+        <header className="space-y-6">
+          <div className="flex items-center gap-3">
+            <span className="p-2 bg-[#111815] border border-[#232B27] rounded-xl">
+              <svg className="w-6 h-6 text-[#22C55E]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+              </svg>
+            </span>
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight text-[#4ADE80]">
+                Syntropy Leaderboard
+              </h1>
+              <p className="text-sm text-[#9CA3AF]">
+                Real-time standings based on accumulated ESG gamification points.
+              </p>
+            </div>
+          </div>
+        </header>
 
         <Suspense
           fallback={

@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    template: '%s – Syntropy',
+    template: '%s',
     default: 'Syntropy — Enterprise ESG Operating System',
   },
   description:
