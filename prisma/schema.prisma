@@ -1,142 +1,49 @@
-// ============================================================================
-// ENVIRONMENTAL MODULE — standalone schema
-// ============================================================================
-//
-// MERGE CONTRACT — the one thing that must stay identical across all modules:
-//   model Department {
-//     id   String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-//     name String @unique
-//     ...
-//   }
-//   Every module FKs to Department.id as `String @db.Uuid`.
-//   If everyone holds this shape, the merge is mechanical.
-// ============================================================================
+datasource db {
+  provider = "sqlite"
+}
 
 generator client {
   provider = "prisma-client-js"
 }
 
-datasource db {
-  provider = "postgresql"
+model Policy {
+  id               String                @id
+  title            String
+  department       String
+  description      String
+  status           String
+  version          String
+  effectiveDate    String
+  acknowledgements PolicyAcknowledgement[]
 }
 
-// ----------------------------------------------------------------------------
-// SHARED MASTER DATA
-// Defined here so Environmental can run standalone. At merge time this model
-// is owned by whoever takes Settings — my copy gets deleted, not theirs.
-// The FK shape is what matters, not who declares it.
-// ----------------------------------------------------------------------------
-
-model Department {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name      String   @unique
-  code      String?  @unique
-  createdAt DateTime @default(now()) @map("created_at")
-
-  carbonTransactions CarbonTransaction[]
-  environmentalGoals EnvironmentalGoal[]
-
-  @@map("departments")
+model PolicyAcknowledgement {
+  id           String  @id
+  policyId     String
+  employeeName String
+  department   String
+  status       String
+  dateSigned   String?
+  policy       Policy  @relation(fields: [policyId], references: [id], onDelete: Cascade)
 }
 
-// ----------------------------------------------------------------------------
-// ENVIRONMENTAL — enums
-// ----------------------------------------------------------------------------
-
-enum EmissionFactorStatus {
-  ACTIVE
-  INACTIVE
+model Audit {
+  id               String            @id
+  title            String
+  department       String
+  auditor          String
+  date             String
+  findings         String
+  status           String
+  complianceIssues ComplianceIssue[]
 }
 
-enum CarbonSourceType {
-  PURCHASE
-  MANUFACTURING
-  EXPENSE
-  FLEET
-  MANUAL
-}
-
-enum EnvironmentalGoalStatus {
-  ACTIVE
-  ON_TRACK
-  AT_RISK
-  COMPLETED
-  ARCHIVED
-}
-
-// ----------------------------------------------------------------------------
-// ENVIRONMENTAL — master data
-// ----------------------------------------------------------------------------
-
-model EmissionFactor {
-  id         String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name       String
-  category   String
-  unit       String
-  co2PerUnit Decimal              @db.Decimal(12, 4) @map("co2_per_unit")
-  status     EmissionFactorStatus @default(ACTIVE)
-  createdAt  DateTime             @default(now()) @map("created_at")
-  updatedAt  DateTime             @updatedAt @map("updated_at")
-
-  carbonTransactions CarbonTransaction[]
-
-  @@map("emission_factors")
-}
-
-model ProductESGProfile {
-  id              String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  productName     String               @map("product_name")
-  productCode     String               @unique @map("product_code")
-  category        String?
-  carbonFootprint Decimal?             @db.Decimal(12, 4) @map("carbon_footprint")
-  sustainableFlag Boolean              @default(false) @map("sustainable_flag")
-  notes           String?
-  status          EmissionFactorStatus @default(ACTIVE)
-  createdAt       DateTime             @default(now()) @map("created_at")
-  updatedAt       DateTime             @updatedAt @map("updated_at")
-
-  @@map("product_esg_profiles")
-}
-
-// ----------------------------------------------------------------------------
-// ENVIRONMENTAL — transactional data
-// ----------------------------------------------------------------------------
-
-model CarbonTransaction {
-  id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  departmentId     String           @db.Uuid @map("department_id")
-  emissionFactorId String           @db.Uuid @map("emission_factor_id")
-  sourceType       CarbonSourceType @default(MANUAL) @map("source_type")
-  sourceRef        String?          @map("source_ref")
-  activityAmount   Decimal          @db.Decimal(14, 4) @map("activity_amount")
-  co2Kg            Decimal          @db.Decimal(14, 4) @map("co2_kg")
-  transactionDate  DateTime         @default(now()) @map("transaction_date")
-  autoGenerated    Boolean          @default(false) @map("auto_generated")
-  createdAt        DateTime         @default(now()) @map("created_at")
-  updatedAt        DateTime         @updatedAt @map("updated_at")
-
-  department     Department     @relation(fields: [departmentId], references: [id], onDelete: Cascade)
-  emissionFactor EmissionFactor @relation(fields: [emissionFactorId], references: [id], onDelete: Restrict)
-
-  @@index([departmentId])
-  @@index([emissionFactorId])
-  @@index([sourceType, sourceRef])
-  @@map("carbon_transactions")
-}
-
-model EnvironmentalGoal {
-  id           String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name         String
-  departmentId String                  @db.Uuid @map("department_id")
-  targetCo2Kg  Decimal                 @db.Decimal(14, 4) @map("target_co2_kg")
-  currentCo2Kg Decimal                 @default(0) @db.Decimal(14, 4) @map("current_co2_kg")
-  deadline     DateTime
-  status       EnvironmentalGoalStatus @default(ACTIVE)
-  createdAt    DateTime                @default(now()) @map("created_at")
-  updatedAt    DateTime                @updatedAt @map("updated_at")
-
-  department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
-
-  @@index([departmentId])
-  @@map("environmental_goals")
+model ComplianceIssue {
+  id         String @id
+  auditId    String
+  issue      String
+  severity   String
+  department String
+  status     String
+  audit      Audit  @relation(fields: [auditId], references: [id], onDelete: Cascade)
 }
