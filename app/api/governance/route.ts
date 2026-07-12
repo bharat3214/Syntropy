@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { PrismaClient } from "@prisma/client";
+import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import path from "path";
 
 type PolicyStatus = "Active" | "Draft";
 type AcknowledgementStatus = "Acknowledged" | "Pending";
@@ -48,56 +51,66 @@ interface OptimisedAuditPayload extends Audit {
   complianceIssues: ComplianceIssue[];
 }
 
-const policiesMap = new Map<string, Policy>([
-  ["POL-001", { id: "POL-001", title: "Environmental Management Policy", department: "Operations", description: "Defines environmental stewardship and waste management procedures.", status: "Active", version: "2.1", effectiveDate: "2025-01-15" }],
-  ["POL-002", { id: "POL-002", title: "Vendor Compliance Policy", department: "Procurement", description: "Establishes supplier ESG disclosure requirements.", status: "Active", version: "1.4", effectiveDate: "2025-03-01" }],
-  ["POL-003", { id: "POL-003", title: "Chemical Safety Policy", department: "Manufacturing", description: "Standards for hazardous material handling and documentation.", status: "Draft", version: "0.9", effectiveDate: "2025-09-01" }]
-]);
-
-const acknowledgementsMap = new Map<string, PolicyAcknowledgement>([
-  ["ACK-001", { id: "ACK-001", policyId: "POL-001", employeeName: "Ava Patel", department: "Operations", status: "Acknowledged", dateSigned: "2025-01-20" }],
-  ["ACK-002", { id: "ACK-002", policyId: "POL-002", employeeName: "Liam Chen", department: "Procurement", status: "Pending", dateSigned: null }],
-  ["ACK-003", { id: "ACK-003", policyId: "POL-003", employeeName: "Sophia Williams", department: "Manufacturing", status: "Pending", dateSigned: null }]
-]);
-
-const auditsMap = new Map<string, Audit>([
-  ["AUD-001", { id: "AUD-001", title: "Q2 Waste Audit", department: "Operations", auditor: "Emma Brooks", date: "2025-06-12", findings: "Minor waste segregation inconsistencies.", status: "Completed" }],
-  ["AUD-002", { id: "AUD-002", title: "Vendor Compliance Check", department: "Procurement", auditor: "Noah Singh", date: "2025-07-02", findings: "Awaiting vendor disclosure verification.", status: "Under Review" }],
-  ["AUD-003", { id: "AUD-003", title: "Safety Documentation Review", department: "Manufacturing", auditor: "Olivia Carter", date: "2025-08-15", findings: "Scheduled inspection.", status: "Scheduled" }]
-]);
-
-const complianceMap = new Map<string, ComplianceIssue>([
-  ["CMP-001", { id: "CMP-001", auditId: "AUD-001", issue: "Missing MSDS sheets", severity: "High", department: "Manufacturing", status: "Open" }],
-  ["CMP-002", { id: "CMP-002", auditId: "AUD-002", issue: "Late vendor disclosure", severity: "Medium", department: "Procurement", status: "In Progress" }],
-  ["CMP-003", { id: "CMP-003", auditId: "AUD-001", issue: "Waste container labeling", severity: "Low", department: "Operations", status: "Resolved" }]
-]);
+const dbPath = path.join(process.cwd(), "dev.db");
+const adapter = new PrismaBetterSqlite3({
+  url: `file:${dbPath}`
+});
+const prisma = new PrismaClient({ adapter });
 
 const generateId = (prefix: string): string =>
   `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 export async function GET() {
-  const complianceByAuditId: Record<string, ComplianceIssue[]> = {};
-  for (const issue of complianceMap.values()) {
-    if (!complianceByAuditId[issue.auditId]) {
-      complianceByAuditId[issue.auditId] = [];
+  const policies = await prisma.policy.findMany();
+  const acknowledgements = await prisma.policyAcknowledgement.findMany();
+  const complianceIssues = await prisma.complianceIssue.findMany();
+  const audits = await prisma.audit.findMany({
+    include: {
+      complianceIssues: true
     }
-    complianceByAuditId[issue.auditId].push(issue);
-  }
+  });
 
-  const optimizedAudits: OptimisedAuditPayload[] = [];
-  for (const audit of auditsMap.values()) {
-    optimizedAudits.push({
-      ...audit,
-      complianceIssues: complianceByAuditId[audit.id] || [],
-    });
-  }
+  const totalIssues = complianceIssues.length;
+  const resolvedIssues = complianceIssues.filter(
+    (c) => c.status === "Resolved"
+  ).length;
+  const complianceScore = totalIssues > 0 ? (resolvedIssues / totalIssues) * 100 : 100;
 
-  return NextResponse.json({
-    policies: Array.from(policiesMap.values()),
-    acknowledgements: Array.from(acknowledgementsMap.values()),
-    audits: optimizedAudits,
-    complianceIssues: Array.from(complianceMap.values()),
-  }, { status: 200 });
+  const totalOpenIssues = complianceIssues.filter(
+    (c) => c.status === "Open" || c.status === "In Progress"
+  ).length;
+
+  const departments = new Set<string>();
+  for (const p of policies) departments.add(p.department);
+  for (const a of acknowledgements) departments.add(a.department);
+  for (const au of audits) departments.add(au.department);
+  for (const c of complianceIssues) departments.add(c.department);
+
+  const departmentLeaderboard = Array.from(departments)
+    .map((dept) => {
+      const unresolvedCount = complianceIssues.filter(
+        (c) =>
+          c.department === dept &&
+          (c.status === "Open" || c.status === "In Progress")
+      ).length;
+      return { department: dept, unresolvedCount };
+    })
+    .sort((a, b) => a.unresolvedCount - b.unresolvedCount);
+
+  return NextResponse.json(
+    {
+      policies,
+      acknowledgements,
+      audits,
+      complianceIssues,
+      analytics: {
+        complianceScore,
+        totalOpenIssues,
+        departmentLeaderboard
+      }
+    },
+    { status: 200 }
+  );
 }
 
 export async function POST(req: NextRequest) {
@@ -116,15 +129,25 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
       }
       const id = generateId("AUD");
-      const newAudit: Audit = { id, ...data };
-      auditsMap.set(id, newAudit);
+      const newAudit = await prisma.audit.create({
+        data: {
+          id,
+          title: data.title,
+          department: data.department,
+          auditor: data.auditor,
+          date: data.date,
+          findings: data.findings,
+          status: data.status
+        }
+      });
       return NextResponse.json(newAudit, { status: 201 });
     }
 
     case "EXPORT_AUDITS": {
+      const audits = await prisma.audit.findMany();
       const headers = ["id", "title", "department", "auditor", "date", "findings", "status"];
       const rows: string[] = [];
-      for (const audit of auditsMap.values()) {
+      for (const audit of audits) {
         rows.push([
           audit.id,
           audit.title,
@@ -140,30 +163,55 @@ export async function POST(req: NextRequest) {
     }
 
     case "ACKNOWLEDGE_POLICY": {
-      const ack = acknowledgementsMap.get(data.acknowledgementId);
+      const ack = await prisma.policyAcknowledgement.findUnique({
+        where: { id: data.acknowledgementId }
+      });
       if (!ack) return NextResponse.json({ error: "Not found." }, { status: 404 });
-      ack.status = "Acknowledged";
-      ack.dateSigned = new Date().toISOString().split("T")[0];
-      return NextResponse.json(ack, { status: 200 });
+      const updatedAck = await prisma.policyAcknowledgement.update({
+        where: { id: data.acknowledgementId },
+        data: {
+          status: "Acknowledged",
+          dateSigned: new Date().toISOString().split("T")[0]
+        }
+      });
+      return NextResponse.json(updatedAck, { status: 200 });
     }
 
     case "RESOLVE_COMPLIANCE": {
-      const issue = complianceMap.get(data.issueId);
+      const issue = await prisma.complianceIssue.findUnique({
+        where: { id: data.issueId }
+      });
       if (!issue) return NextResponse.json({ error: "Not found." }, { status: 404 });
-      issue.status = "Resolved";
-      return NextResponse.json(issue, { status: 200 });
+      const updatedIssue = await prisma.complianceIssue.update({
+        where: { id: data.issueId },
+        data: {
+          status: "Resolved"
+        }
+      });
+      return NextResponse.json(updatedIssue, { status: 200 });
     }
 
     case "RAISE_COMPLIANCE": {
       if (!data.auditId || !data.issue || !data.severity || !data.department) {
         return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
       }
-      if (!auditsMap.has(data.auditId)) {
+      const audit = await prisma.audit.findUnique({
+        where: { id: data.auditId }
+      });
+      if (!audit) {
         return NextResponse.json({ error: "Referenced audit not found." }, { status: 404 });
       }
       const id = generateId("CMP");
-      const newIssue: ComplianceIssue = { id, status: "Open", ...data };
-      complianceMap.set(id, newIssue);
+      const newIssue = await prisma.complianceIssue.create({
+        data: {
+          id,
+          auditId: data.auditId,
+          issue: data.issue,
+          severity: data.severity,
+          department: data.department,
+          status: "Open"
+        }
+      });
       return NextResponse.json(newIssue, { status: 201 });
     }
 

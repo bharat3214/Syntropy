@@ -43,3 +43,7 @@ docs/ps
 
 # prisma
 prisma/generated
+/lib/generated/prisma
+
+*.db
+*.db-journal
