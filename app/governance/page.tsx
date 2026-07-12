@@ -9,6 +9,11 @@ import {
   useTransition,
 } from "react";
 
+import PolicySection from "../api/governance/PolicySection";
+import AuditsSection from "../api/governance/AuditsSection";
+import ComplianceSection from "../api/governance/ComplianceSection";
+
+
 type PolicyStatus = "Active" | "Draft";
 type AcknowledgementStatus = "Acknowledged" | "Pending";
 type AuditStatus = "Completed" | "Under Review" | "Scheduled";
@@ -221,341 +226,105 @@ export default function GovernancePage() {
   );
 
   return (
-    <main className="mx-auto max-w-7xl space-y-6 p-6">
-      <header className="space-y-4">
-        <h1 className="text-3xl font-bold">
-          Governance Dashboard
-        </h1>
+    <div className="min-h-screen bg-[#0B0F0D] text-[#F3F4F1] font-sans antialiased">
+      <main className="mx-auto max-w-7xl space-y-8 p-6 md:p-8">
+        <header className="space-y-6">
+          <div className="flex items-center gap-3">
+            <span className="p-2 bg-[#111815] border border-[#232B27] rounded-xl">
+              <svg className="w-6 h-6 text-[#22C55E]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                <path d="m9 12 2 2 4-4"></path>
+              </svg>
+            </span>
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight text-[#4ADE80]">
+                Governance Dashboard
+              </h1>
+              <p className="text-sm text-[#9CA3AF]">
+                Manage corporate policy tracking, ESG audits, and compliance incidents.
+              </p>
+            </div>
+          </div>
 
-        <nav className="flex flex-wrap gap-2">
-          {tabs.map((tab) => (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => setActiveTab(tab.key)}
-              className={`rounded border px-4 py-2 ${
-                activeTab === tab.key
-                  ? "font-semibold"
-                  : ""
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </nav>
-      </header>
-
-      {loading && <p>Loading...</p>}
-
-      {error && <p>{error}</p>}
-
-      {!loading && data && (
-        <>
-          {activeTab === "policies" && (
-            <section className="space-y-4">
-              <table className="w-full border-collapse border">
-                <thead>
-                  <tr>
-                    <th className="border p-2">Title</th>
-                    <th className="border p-2">
-                      Department
-                    </th>
-                    <th className="border p-2">
-                      Status
-                    </th>
-                    <th className="border p-2">
-                      Version
-                    </th>
-                    <th className="border p-2">
-                      Effective
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.policies.map((policy) => (
-                    <tr key={policy.id}>
-                      <td className="border p-2">
-                        {policy.title}
-                      </td>
-                      <td className="border p-2">
-                        {policy.department}
-                      </td>
-                      <td className="border p-2">
-                        {policy.status}
-                      </td>
-                      <td className="border p-2">
-                        {policy.version}
-                      </td>
-                      <td className="border p-2">
-                        {policy.effectiveDate}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </section>
-          )}
-
-          {activeTab === "acknowledgements" && (
-            <section>
-              <table className="w-full border-collapse border">
-                <thead>
-                  <tr>
-                    <th className="border p-2">
-                      Employee
-                    </th>
-                    <th className="border p-2">
-                      Department
-                    </th>
-                    <th className="border p-2">
-                      Status
-                    </th>
-                    <th className="border p-2">
-                      Date Signed
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.acknowledgements.map((ack) => (
-                    <tr key={ack.id}>
-                      <td className="border p-2">
-                        {ack.employeeName}
-                      </td>
-                      <td className="border p-2">
-                        {ack.department}
-                      </td>
-                      <td className="border p-2">
-                        {ack.status}
-                      </td>
-                      <td className="border p-2">
-                        {ack.dateSigned ?? "-"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </section>
-          )}
-
-          {activeTab === "audits" && (
-            <section className="space-y-8">
-              <form
-                onSubmit={handleCreateAudit}
-                className="grid grid-cols-1 gap-3 md:grid-cols-2"
+          <nav className="flex flex-wrap gap-2 border-b border-[#232B27] pb-4">
+            {tabs.map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActiveTab(tab.key)}
+                className={`rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-150 ${
+                  activeTab === tab.key
+                    ? "bg-[#111815] border border-[#22C55E] text-[#22C55E] shadow-sm shadow-[#22C55E]/10"
+                    : "bg-transparent border border-[#232B27] text-[#9CA3AF] hover:text-[#F3F4F1] hover:border-[#9CA3AF]/30"
+                }`}
               >
-                <input
-                  required
-                  placeholder="Title"
-                  value={auditForm.title}
-                  onChange={(e) =>
-                    setAuditForm((prev) => ({
-                      ...prev,
-                      title: e.target.value,
-                    }))
-                  }
-                  className="border p-2"
-                />
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+        </header>
 
-                <input
-                  required
-                  placeholder="Department"
-                  value={auditForm.department}
-                  onChange={(e) =>
-                    setAuditForm((prev) => ({
-                      ...prev,
-                      department: e.target.value,
-                    }))
-                  }
-                  className="border p-2"
-                />
+        {loading && (
+          <div className="space-y-6 animate-pulse">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-28 bg-[#111815] border border-[#232B27] rounded-2xl" />
+              ))}
+            </div>
+            <div className="h-16 bg-[#111815] border border-[#232B27] rounded-2xl" />
+            <div className="h-64 bg-[#111815] border border-[#232B27] rounded-2xl" />
+          </div>
+        )}
 
-                <input
-                  required
-                  placeholder="Auditor"
-                  value={auditForm.auditor}
-                  onChange={(e) =>
-                    setAuditForm((prev) => ({
-                      ...prev,
-                      auditor: e.target.value,
-                    }))
-                  }
-                  className="border p-2"
-                />
+        {error && (
+          <div className="p-4 bg-[#EF4444]/10 border border-[#EF4444]/20 rounded-2xl text-[#EF4444] text-sm flex items-center gap-2.5">
+            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <span>{error}</span>
+          </div>
+        )}
 
-                <input
-                  required
-                  type="date"
-                  value={auditForm.date}
-                  onChange={(e) =>
-                    setAuditForm((prev) => ({
-                      ...prev,
-                      date: e.target.value,
-                    }))
-                  }
-                  className="border p-2"
-                />
+        {!loading && data && (
+          <>
+            {activeTab === "policies" && (
+              <PolicySection
+                policies={data.policies}
+                acknowledgements={data.acknowledgements}
+                activeTab="policies"
+              />
+            )}
 
-                <input
-                  required
-                  placeholder="Findings"
-                  value={auditForm.findings}
-                  onChange={(e) =>
-                    setAuditForm((prev) => ({
-                      ...prev,
-                      findings: e.target.value,
-                    }))
-                  }
-                  className="border p-2 md:col-span-2"
-                />
+            {activeTab === "acknowledgements" && (
+              <PolicySection
+                policies={data.policies}
+                acknowledgements={data.acknowledgements}
+                activeTab="acknowledgements"
+              />
+            )}
 
-                <select
-                  value={auditForm.status}
-                  onChange={(e) =>
-                    setAuditForm((prev) => ({
-                      ...prev,
-                      status:
-                        e.target
-                          .value as AuditStatus,
-                    }))
-                  }
-                  className="border p-2"
-                >
-                  <option>Scheduled</option>
-                  <option>Under Review</option>
-                  <option>Completed</option>
-                </select>
+            {activeTab === "audits" && (
+              <AuditsSection
+                audits={data.audits}
+                auditForm={auditForm}
+                setAuditForm={setAuditForm}
+                onCreateAudit={handleCreateAudit}
+                onExportAudits={handleExportAudits}
+              />
+            )}
 
-                <div className="flex gap-2">
-                  <button
-                    type="submit"
-                    className="border px-4 py-2"
-                  >
-                    + New Audit
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleExportAudits}
-                    className="border px-4 py-2"
-                  >
-                    Export
-                  </button>
-                </div>
-              </form>
-
-              <table className="w-full border-collapse border">
-                <thead>
-                  <tr>
-                    <th className="border p-2">
-                      Title
-                    </th>
-                    <th className="border p-2">
-                      Department
-                    </th>
-                    <th className="border p-2">
-                      Auditor
-                    </th>
-                    <th className="border p-2">
-                      Status
-                    </th>
-                    <th className="border p-2">
-                      Issues
-                    </th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {data.audits.map((audit) => (
-                    <tr key={audit.id}>
-                      <td className="border p-2">
-                        {audit.title}
-                      </td>
-                      <td className="border p-2">
-                        {audit.department}
-                      </td>
-                      <td className="border p-2">
-                        {audit.auditor}
-                      </td>
-                      <td className="border p-2">
-                        {audit.status}
-                      </td>
-                      <td className="border p-2">
-                        {audit.complianceIssues
-                          .length}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </section>
-          )}
-
-          {activeTab === "compliance" && (
-            <section>
-              <table className="w-full border-collapse border">
-                <thead>
-                  <tr>
-                    <th className="border p-2">
-                      Issue
-                    </th>
-                    <th className="border p-2">
-                      Severity
-                    </th>
-                    <th className="border p-2">
-                      Department
-                    </th>
-                    <th className="border p-2">
-                      Status
-                    </th>
-                    <th className="border p-2">
-                      Action
-                    </th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {data.complianceIssues.map(
-                    (issue) => (
-                      <tr key={issue.id}>
-                        <td className="border p-2">
-                          {issue.issue}
-                        </td>
-                        <td className="border p-2">
-                          {issue.severity}
-                        </td>
-                        <td className="border p-2">
-                          {issue.department}
-                        </td>
-                        <td className="border p-2">
-                          {issue.status}
-                        </td>
-                        <td className="border p-2">
-                          <button
-                            type="button"
-                            disabled={
-                              isPending ||
-                              issue.status ===
-                                "Resolved"
-                            }
-                            onClick={() =>
-                              handleResolveCompliance(
-                                issue.id
-                              )
-                            }
-                            className="border px-3 py-1"
-                          >
-                            Resolve
-                          </button>
-                        </td>
-                      </tr>
-                    )
-                  )}
-                </tbody>
-              </table>
-            </section>
-          )}
-        </>
-      )}
-    </main>
+            {activeTab === "compliance" && (
+              <ComplianceSection
+                complianceIssues={data.complianceIssues}
+                onResolveIssue={handleResolveCompliance}
+                isPending={isPending}
+              />
+            )}
+          </>
+        )}
+      </main>
+    </div>
   );
 }
