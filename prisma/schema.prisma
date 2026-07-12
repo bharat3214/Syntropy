@@ -1,0 +1,104 @@
+generator client {
+  provider = "prisma-client"
+  output   = "./generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Social Module ───────────────────────────────────────────────────────────
+
+model CsrActivity {
+  id              String   @id @default(cuid())
+  title           String
+  description     String
+  category        String   // Environment, Community, Education, Health
+  department      String
+  location        String
+  date            DateTime
+  durationHours   Float
+  maxParticipants Int
+  status          String   @default("Draft") // Draft, Active, Completed, Cancelled
+  organizer       String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  participations EmployeeParticipation[]
+
+  @@map("csr_activities")
+}
+
+model EmployeeParticipation {
+  id              String    @id @default(cuid())
+  activityId      String
+  employeeName    String
+  employeeId      String
+  department      String
+  proof           String?
+  approvalStatus  String    @default("Pending") // Pending, Approved, Rejected
+  pointsEarned    Int       @default(0)
+  completionDate  DateTime?
+  registeredDate  DateTime  @default(now())
+  reviewedBy      String?
+  reviewedDate    DateTime?
+  rejectionReason String?
+
+  activity CsrActivity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  @@unique([activityId, employeeId])
+  @@map("employee_participations")
+}
+
+model DiversityMetric {
+  id         String   @id @default(cuid())
+  department String
+  category   String   // Gender, Ethnicity, Age Group, Disability
+  label      String   // e.g. "Female", "25-34", "Asian"
+  value      Int
+  total      Int
+  period     String   // e.g. "Q2 2025"
+  year       Int
+  createdAt  DateTime @default(now())
+
+  @@map("diversity_metrics")
+}
+
+model TrainingProgram {
+  id            String   @id @default(cuid())
+  title         String
+  description   String
+  category      String   // ESG Awareness, Safety, Compliance, DEI
+  department    String
+  trainer       String
+  durationHours Float
+  mandatory     Boolean  @default(false)
+  startDate     DateTime
+  endDate       DateTime
+  status        String   @default("Scheduled") // Scheduled, In Progress, Completed, Cancelled
+  maxCapacity   Int
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  completions TrainingCompletion[]
+
+  @@map("training_programs")
+}
+
+model TrainingCompletion {
+  id             String    @id @default(cuid())
+  trainingId     String
+  employeeName   String
+  employeeId     String
+  department     String
+  completionDate DateTime?
+  score          Float?
+  status         String    @default("Not Started") // Not Started, In Progress, Completed, Failed
+  certificateUrl String?
+  createdAt      DateTime  @default(now())
+
+  training TrainingProgram @relation(fields: [trainingId], references: [id], onDelete: Cascade)
+
+  @@unique([trainingId, employeeId])
+  @@map("training_completions")
+}
