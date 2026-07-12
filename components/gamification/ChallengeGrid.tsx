@@ -345,6 +345,42 @@ const STATUS_FILTERS: { value: ChallengeStatus | 'ALL'; label: string }[] = [
 export default function ChallengeGrid({ challenges }: ChallengeGridProps) {
   const [activeFilter, setActiveFilter] = useState<ChallengeStatus | 'ALL'>('ALL');
   const [showNewChallengeModal, setShowNewChallengeModal] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState('');
+
+  async function handleCreateChallenge(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setCreating(true);
+    setCreateError('');
+    const fd = new FormData(e.currentTarget);
+    const body = {
+      title: fd.get('title') as string,
+      description: fd.get('description') as string,
+      xpReward: Number(fd.get('xpReward')),
+      status: 'DRAFT',
+      evidenceRequired: fd.get('evidenceRequired') === 'on',
+      startDate: fd.get('startDate') as string,
+      endDate: fd.get('endDate') as string,
+      difficulty: fd.get('difficulty') as string,
+    };
+    try {
+      const res = await fetch('/api/gamification/challenges', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to create challenge');
+      }
+      setShowNewChallengeModal(false);
+      window.location.reload();
+    } catch (err: any) {
+      setCreateError(err.message);
+    } finally {
+      setCreating(false);
+    }
+  }
 
   const filtered =
     activeFilter === 'ALL'
@@ -471,16 +507,95 @@ export default function ChallengeGrid({ challenges }: ChallengeGridProps) {
                 <XCircle size={20} />
               </button>
             </div>
-            <p className="text-sm" style={{ color: '#9CA3AF' }}>
-              Challenge creation form goes here. Connect to a server action to persist to the database.
-            </p>
-            <button
-              onClick={() => setShowNewChallengeModal(false)}
-              className="self-end rounded-xl px-4 py-2 text-sm font-semibold"
-              style={{ background: '#22C55E', color: '#0B0F0D' }}
-            >
-              Close
-            </button>
+            <form onSubmit={handleCreateChallenge} className="flex flex-col gap-3">
+              <input
+                name="title"
+                placeholder="Challenge title"
+                required
+                className="w-full rounded-lg px-3 py-2 text-sm"
+                style={{ background: '#1A2320', border: '1px solid #232B27', color: '#E5E7EB' }}
+              />
+              <textarea
+                name="description"
+                placeholder="Description"
+                required
+                rows={3}
+                className="w-full rounded-lg px-3 py-2 text-sm resize-none"
+                style={{ background: '#1A2320', border: '1px solid #232B27', color: '#E5E7EB' }}
+              />
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className="block text-xs mb-1" style={{ color: '#9CA3AF' }}>XP Reward</label>
+                  <input
+                    name="xpReward"
+                    type="number"
+                    min={10}
+                    required
+                    className="w-full rounded-lg px-3 py-2 text-sm"
+                    style={{ background: '#1A2320', border: '1px solid #232B27', color: '#E5E7EB' }}
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-xs mb-1" style={{ color: '#9CA3AF' }}>Difficulty</label>
+                  <select
+                    name="difficulty"
+                    className="w-full rounded-lg px-3 py-2 text-sm"
+                    style={{ background: '#1A2320', border: '1px solid #232B27', color: '#E5E7EB' }}
+                  >
+                    <option value="Easy">Easy</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Hard">Hard</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className="block text-xs mb-1" style={{ color: '#9CA3AF' }}>Start Date</label>
+                  <input
+                    name="startDate"
+                    type="date"
+                    required
+                    className="w-full rounded-lg px-3 py-2 text-sm"
+                    style={{ background: '#1A2320', border: '1px solid #232B27', color: '#E5E7EB' }}
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-xs mb-1" style={{ color: '#9CA3AF' }}>End Date</label>
+                  <input
+                    name="endDate"
+                    type="date"
+                    required
+                    className="w-full rounded-lg px-3 py-2 text-sm"
+                    style={{ background: '#1A2320', border: '1px solid #232B27', color: '#E5E7EB' }}
+                  />
+                </div>
+              </div>
+              <label className="flex items-center gap-2 text-sm" style={{ color: '#9CA3AF' }}>
+                <input name="evidenceRequired" type="checkbox" />
+                Require evidence upload
+              </label>
+              {createError && (
+                <p className="text-xs" style={{ color: '#EF4444' }}>{createError}</p>
+              )}
+              <div className="flex gap-2 justify-end mt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowNewChallengeModal(false)}
+                  className="rounded-xl px-4 py-2 text-sm font-semibold"
+                  style={{ background: '#232B27', color: '#9CA3AF' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={creating}
+                  className="rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-50"
+                  style={{ background: '#22C55E', color: '#0B0F0D' }}
+                >
+                  {creating ? 'Creating...' : 'Create Challenge'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
