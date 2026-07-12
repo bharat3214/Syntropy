@@ -1,7 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  serverExternalPackages: ['@prisma/client', 'pg'],
+  experimental: {
+    turbopack: {
+      // Explicitly locks the root to the working directory where your .env lives
+      root: __dirname, 
+    },
+  },
 };
 
 export default nextConfig;

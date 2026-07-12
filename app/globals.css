@@ -1,26 +1,66 @@
 @import "tailwindcss";
 
+/* ============================================================================
+   SYNTROPY — DESIGN SYSTEM TOKENS (Dark-Mode Only)
+   Applied globally; no light theme.
+   ============================================================================ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Surfaces */
+  --color-bg-base:        #0B0F0D;
+  --color-bg-card:        #111815;
+  --color-bg-hover:       #0F1512;
+
+  /* Brand */
+  --color-brand-green:    #22C55E;
+  --color-heading-green:  #4ADE80;
+
+  /* Text */
+  --color-text-primary:   #F3F4F1;
+  --color-text-secondary: #9CA3AF;
+
+  /* Borders */
+  --color-border:         #232B27;
+
+  /* Semantic */
+  --color-success:        #22C55E;
+  --color-warning:        #F59E0B;
+  --color-error:          #EF4444;
+  --color-info:           #3B82F6;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Force dark background everywhere — no system preference override */
+html, body {
+  background-color: #0B0F0D;
+  color: #F3F4F1;
+  font-family: var(--font-geist-sans, system-ui, sans-serif);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100%;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Hide scrollbar on overflow-x containers while keeping functionality */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Focus rings — use brand green */
+:focus-visible {
+  outline: 2px solid #22C55E;
+  outline-offset: 2px;
 }
+
+/* Line-clamp utility for older browsers */
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Smooth table-layout */
+table { table-layout: auto; }
